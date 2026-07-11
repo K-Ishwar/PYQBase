@@ -177,13 +177,16 @@ async def submit_attempt(
 
     # ── 6. ELO computation + enqueue ────────────────────────────────────────
     # Treat user's current skill as 1200 baseline (full SRS/ELO per user is Phase 8)
-    user_elo = 1200
-    new_question_elo = _compute_elo(
-        player_elo=question.elo_rating,
-        opponent_elo=user_elo,
-        score=elo_score,
-    )
-    await _enqueue_elo_update(db, question_id, new_question_elo)
+    if correct_option != "DROPPED":
+        user_elo = 1200
+        new_question_elo = _compute_elo(
+            player_elo=question.elo_rating,
+            opponent_elo=user_elo,
+            score=elo_score,
+        )
+        await _enqueue_elo_update(db, question_id, new_question_elo)
+    else:
+        new_question_elo = question.elo_rating
 
     # ── 7. Return immediately ───────────────────────────────────────────────
     return {

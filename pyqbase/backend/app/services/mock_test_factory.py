@@ -51,7 +51,7 @@ class MockTestFactory:
                     TopicDb.subject_id == subject_id
                 )
             )
-            .order_by(func.random())  # Or could order by ELO
+            .order_by(QuestionDb.elo_rating.desc())  # Weight by difficulty
             .limit(limit)
         )
         wrong_result = await self.db.execute(wrong_stmt)

@@ -20,7 +20,7 @@ def verify_jwt(token: str) -> dict:
             token,
             settings.SUPABASE_JWT_SECRET,
             algorithms=["HS256"],
-            audience="authenticated"
+            options={"verify_aud": False}
         )
         return payload
     except jwt.ExpiredSignatureError:

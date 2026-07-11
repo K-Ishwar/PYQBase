@@ -8,10 +8,7 @@ async function getAdminUser() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-  // Skip auth if placeholder credentials (Phase 4/5 UI dev mode)
-  if (supabaseUrl.includes('placeholder') || supabaseKey.includes('placeholder')) {
-    return { id: 'dev-admin', email: 'dev@admin.local', isAdmin: true }
-  }
+
 
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookies: { getAll: () => cookieStore.getAll(), setAll: () => {} },
