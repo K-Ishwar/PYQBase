@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Search } from "lucide-react"
 
-interface SearchBarProps extends React.InputHTMLAttributes<HTMLInputElement> {}
+type SearchBarProps = React.InputHTMLAttributes<HTMLInputElement>
 
 export function SearchBar({ className, ...props }: SearchBarProps) {
   return (

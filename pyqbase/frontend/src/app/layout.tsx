@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { ReactQueryProvider } from "@/components/ReactQueryProvider";
+import { AuthProvider } from "@/components/providers/auth-provider";
 import { Navbar } from "@/components/ui/Navbar";
 
 const inter = Inter({ 
@@ -35,12 +37,16 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="min-h-screen flex flex-col relative">
-            <Navbar />
-            <main className="flex-1">
-              {children}
-            </main>
-          </div>
+          <ReactQueryProvider>
+            <AuthProvider>
+              <div className="min-h-screen flex flex-col relative">
+                <Navbar />
+                <main className="flex-1">
+                  {children}
+                </main>
+              </div>
+            </AuthProvider>
+          </ReactQueryProvider>
         </ThemeProvider>
       </body>
     </html>

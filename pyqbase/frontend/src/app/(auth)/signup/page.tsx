@@ -51,7 +51,7 @@ export default function SignupPage() {
           }
         })
         router.push('/')
-      } catch (e) {
+      } catch {
         setError('Failed to sync user with backend')
       }
     } else {

@@ -31,7 +31,7 @@ export default function LoginPage() {
     setIsLoading(true)
     setError(null)
     
-    const { error: loginError } = await supabase.auth.signInWithPassword({
+    const { data, error: loginError } = await supabase.auth.signInWithPassword({
       email: values.email,
       password: values.password,
     })
@@ -40,6 +40,18 @@ export default function LoginPage() {
       setError(loginError.message)
       setIsLoading(false)
       return
+    }
+
+    try {
+      // Sync user with backend immediately after authentication
+      await fetch('http://localhost:8000/api/v1/auth/sync-user', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${data.session?.access_token}`
+        }
+      })
+    } catch (e) {
+      console.error('Failed to sync user with backend:', e)
     }
 
     router.push('/')
@@ -94,7 +106,7 @@ export default function LoginPage() {
             Log in with Google
           </Button>
           <p className="text-sm text-center text-slate-500">
-            Don't have an account? <a href="/signup" className="text-blue-500 hover:underline">Sign up</a>
+            Don&apos;t have an account? <a href="/signup" className="text-blue-500 hover:underline">Sign up</a>
           </p>
         </CardFooter>
       </Card>

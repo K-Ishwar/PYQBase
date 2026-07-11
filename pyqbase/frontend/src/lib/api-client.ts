@@ -32,7 +32,7 @@ export async function apiClient(endpoint: string, options: RequestInit = {}) {
   const supabase = createClient();
   const headers = new Headers(options.headers);
 
-  let { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await supabase.auth.getSession();
 
   if (session?.access_token) {
     headers.set('Authorization', `Bearer ${session.access_token}`);

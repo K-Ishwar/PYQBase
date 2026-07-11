@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ChevronRight } from "lucide-react"
+
 
 interface ExamCardProps {
   icon: React.ReactNode

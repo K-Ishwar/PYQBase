@@ -2,6 +2,7 @@ import { SearchBar } from "@/components/ui/SearchBar"
 import { ExamCard } from "@/components/ui/ExamCard"
 import { Shield, BookOpen, GraduationCap, Landmark, BookCopy, Globe, ArrowRight, Lightbulb, Leaf, Component } from "lucide-react"
 import Link from "next/link"
+import { DailyRevisionCard } from "@/components/ui/DailyRevisionCard"
 
 export default function Home() {
   return (
@@ -19,6 +20,11 @@ export default function Home() {
         <div className="w-full flex justify-center pt-4">
           <SearchBar />
         </div>
+      </section>
+
+      {/* SRS Daily Revision Section */}
+      <section>
+        <DailyRevisionCard />
       </section>
 
       {/* Choose Your Exam Section */}
