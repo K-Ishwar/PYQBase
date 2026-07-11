@@ -24,6 +24,7 @@ class QuestionDb(SQLModel, table=True):
     has_image: bool = Field(default=False)
     image_url: Optional[str] = None
     image_description: Optional[str] = Field(default=None, sa_column=Column(Text))
+    explanation: Optional[dict] = Field(default=None, sa_column=Column(JSONB))
     parse_confidence: Optional[float] = None
     subtopic_id: UUID = Field(foreign_key="subtopics.id")
     syllabus_point_id: Optional[int] = None

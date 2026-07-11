@@ -42,7 +42,7 @@ async def check_duplicate_attempt(
             WHERE user_id = :user_id
               AND question_id = :question_id
               AND attempt_date = :today
-              AND (CURRENT_TIMESTAMP - NOW()) < INTERVAL '1 second'
+              AND (NOW() - created_at) < INTERVAL '5 seconds'
             LIMIT 1
         """),
         {"user_id": str(user_id), "question_id": str(question_id), "today": ist_today},

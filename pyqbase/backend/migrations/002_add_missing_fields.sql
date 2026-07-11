@@ -1,0 +1,3 @@
+ALTER TABLE user_srs ADD COLUMN repetitions INT NOT NULL DEFAULT 0;
+ALTER TABLE user_attempts ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT NOW();
+ALTER TABLE questions ADD COLUMN explanation JSONB;
