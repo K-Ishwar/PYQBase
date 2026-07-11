@@ -11,6 +11,7 @@ class User(BaseModel):
     id: UUID
     role: str
     email: str
+    subscription_status: str = "free"  # free | active | past_due | canceled
 
 def verify_jwt(token: str) -> dict:
     try:
@@ -38,11 +39,12 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     app_metadata = payload.get("app_metadata", {})
     role = app_metadata.get("role", "user")  # Fallback to user
     email = payload.get("email", "")
+    subscription_status = app_metadata.get("subscription_status", "free")
     
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
         
-    return User(id=user_id, role=role, email=email)
+    return User(id=user_id, role=role, email=email, subscription_status=subscription_status)
 
 async def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role != "admin":

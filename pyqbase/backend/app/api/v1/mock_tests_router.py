@@ -7,6 +7,7 @@ import zoneinfo
 
 from app.core.database import get_db
 from app.core.security import get_current_user, User
+from app.core.exceptions import PremiumRequiredException, QuotaExceededException
 from app.models.mock_test import (
     MockTestDb,
     MockTestGenerateRequest,
@@ -37,10 +38,16 @@ async def generate_mock_test(
     # Freemium Limits
     if not is_premium:
         if body.question_count > 25:
-            raise HTTPException(status_code=403, detail="Free users are limited to 25 questions per mock test.")
+            raise QuotaExceededException(
+                message="Free users are limited to 25 questions per mock test. Upgrade for up to 100.",
+                details=[{"limit": 25, "requested": body.question_count}]
+            )
         
         if body.mode == "weak_area":
-            raise HTTPException(status_code=403, detail="PREMIUM_REQUIRED")
+            raise PremiumRequiredException(
+                message="Weak-area mock tests are a premium feature. Upgrade to access personalised wrong-answer targeting.",
+                details=[{"required_plan": "active", "upgrade_url": "/pricing"}]
+            )
         
         if body.mode == "custom":
             start_of_week = get_start_of_iso_week_ist()
@@ -54,7 +61,10 @@ async def generate_mock_test(
             res = await db.execute(stmt)
             count = res.scalar() or 0
             if count >= 1:
-                raise HTTPException(status_code=429, detail="Free users are limited to 1 custom mock test per week.")
+                raise QuotaExceededException(
+                    message="Free users are limited to 1 custom mock test per ISO week (resets Monday 00:00 IST). Upgrade for unlimited.",
+                    details=[{"week_count": count, "limit": 1, "resets": "Monday 00:00 IST", "upgrade_url": "/pricing"}]
+                )
 
     # Generate questions
     factory = MockTestFactory(db, current_user.id)

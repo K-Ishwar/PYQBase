@@ -82,6 +82,7 @@ export function Navbar() {
             <Link href="/subjects" className="text-muted-foreground transition-colors hover:text-primary">Subjects</Link>
             <Link href="/topics" className="text-muted-foreground transition-colors hover:text-primary">Topics</Link>
             <Link href="/search" className="text-muted-foreground transition-colors hover:text-primary">Search</Link>
+            <Link href="/mock-tests" className="text-muted-foreground transition-colors hover:text-primary">Mock Tests</Link>
           </div>
         )}
 
