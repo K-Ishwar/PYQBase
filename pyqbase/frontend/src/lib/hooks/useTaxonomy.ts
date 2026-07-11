@@ -52,6 +52,42 @@ export function useSubtopics(topicId?: string) {
   })
 }
 
+// --- Public Endpoints ---
+export function usePublicSubjects() {
+  return useQuery({
+    queryKey: ['public', 'taxonomy', 'subjects'],
+    queryFn: async () => {
+      const res = await apiClient('/api/v1/taxonomy/subjects')
+      if (!res.ok) throw new Error('Failed to fetch public subjects')
+      return res.json()
+    },
+  })
+}
+
+export function usePublicTopics(subjectId: string) {
+  return useQuery({
+    queryKey: ['public', 'taxonomy', 'topics', subjectId],
+    queryFn: async () => {
+      const res = await apiClient(`/api/v1/taxonomy/subjects/${subjectId}/topics`)
+      if (!res.ok) throw new Error('Failed to fetch public topics')
+      return res.json()
+    },
+    enabled: !!subjectId,
+  })
+}
+
+export function usePublicSubtopics(topicId: string) {
+  return useQuery({
+    queryKey: ['public', 'taxonomy', 'subtopics', topicId],
+    queryFn: async () => {
+      const res = await apiClient(`/api/v1/taxonomy/topics/${topicId}/subtopics`)
+      if (!res.ok) throw new Error('Failed to fetch public subtopics')
+      return res.json()
+    },
+    enabled: !!topicId,
+  })
+}
+
 // Mutations
 export function useCreateSubject() {
   const queryClient = useQueryClient()

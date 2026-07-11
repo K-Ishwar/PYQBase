@@ -5,6 +5,7 @@ from typing import Optional
 from app.core.database import get_db
 from app.models.question import SearchResponse
 from app.services.search_service import search_questions
+from app.core.security import get_current_user
 
 router = APIRouter()
 
@@ -83,4 +84,37 @@ async def get_question(question_id: str, db: AsyncSession = Depends(get_db)):
         has_image=question.has_image,
         image_url=question.image_url,
         elo_rating=question.elo_rating,
+    )
+
+
+class QuestionSolutionResponse(BaseModel):
+    id: str
+    correct_option: str
+    explanation: Optional[Dict[str, Any]]
+
+
+@router.get("/{question_id}/solution", response_model=QuestionSolutionResponse)
+async def get_question_solution(
+    question_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: Any = Depends(get_current_user)  # Requires auth
+):
+    """
+    Fetch the correct option and explanation.
+    Restricted to authenticated users.
+    """
+    from app.models.question import QuestionDb
+    from sqlalchemy import select
+    from fastapi import HTTPException
+    
+    result = await db.execute(select(QuestionDb).where(QuestionDb.id == question_id))
+    question = result.scalar_one_or_none()
+    
+    if not question:
+        raise HTTPException(status_code=404, detail="Question not found")
+        
+    return QuestionSolutionResponse(
+        id=str(question.id),
+        correct_option=question.correct_option,
+        explanation=question.explanation,
     )

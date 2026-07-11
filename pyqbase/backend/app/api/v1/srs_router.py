@@ -4,8 +4,8 @@ from sqlalchemy import text
 from typing import Optional
 from uuid import UUID
 
-from app.api.dependencies.database import get_db
-from app.api.dependencies.auth import get_current_user
+from app.core.database import get_db
+from app.core.security import get_current_user
 from app.models.user import UserDb
 
 router = APIRouter(prefix="/srs", tags=["srs"])
