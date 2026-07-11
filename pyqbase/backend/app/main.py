@@ -63,6 +63,15 @@ async def lifespan(app: FastAPI):
 # Initialize slowapi limiter. Default is IP based.
 limiter = Limiter(key_func=get_remote_address)
 
+import sentry_sdk
+
+if settings.ENVIRONMENT == "production" and settings.SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        traces_sample_rate=1.0,
+        environment=settings.ENVIRONMENT,
+    )
+
 app = FastAPI(title="PYQBase API", lifespan=lifespan)
 
 # Configure CORS
