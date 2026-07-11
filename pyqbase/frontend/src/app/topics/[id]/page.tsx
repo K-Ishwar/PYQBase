@@ -1,14 +1,14 @@
 'use client'
 
-import { use, useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { BookOpen, Search, ArrowRight } from 'lucide-react'
 import { usePublicSubtopics } from '@/lib/hooks/useTaxonomy'
 import { useSearch } from '@/lib/hooks/useSearch'
 import Link from 'next/link'
 
-export default function TopicPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+export default function TopicPage({ params }: { params: { id: string } }) {
+  const { id } = params
   const router = useRouter()
   const searchParams = useSearchParams()
   

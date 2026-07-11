@@ -16,8 +16,8 @@ const HeatmapChart = dynamic(() => import('./HeatmapChart'), {
   ),
 })
 
-export default function SubjectPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+export default function SubjectPage({ params }: { params: { id: string } }) {
+  const { id } = params
   const { data, isLoading, isError } = useSubjectHeatmap(id)
 
   if (isLoading) {
