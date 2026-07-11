@@ -18,7 +18,11 @@ from app.api.v1.admin_router import router as admin_router
 from app.api.v1.questions_router import router as questions_router
 from app.api.v1.attempts_router import router as attempts_router
 from app.api.v1.srs_router import router as srs_router
+from app.api.v1.analytics_router import router as analytics_router
+from app.api.v1.taxonomy_router import router as taxonomy_router
+from app.api.v1.mock_tests_router import router as mock_tests_router
 from app.services.elo_worker import run_elo_worker
+from app.services.heatmap_worker import heatmap_worker_loop, heatmap_scheduler_loop
 
 logger = logging.getLogger(__name__)
 
@@ -40,11 +44,20 @@ async def _elo_worker_loop() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Start ELO background worker
-    task = asyncio.create_task(_elo_worker_loop())
+    elo_task = asyncio.create_task(_elo_worker_loop())
     logger.info("ELO worker started.")
+    
+    # Start Heatmap scheduler and worker
+    heatmap_sched_task = asyncio.create_task(heatmap_scheduler_loop())
+    heatmap_work_task = asyncio.create_task(heatmap_worker_loop())
+    logger.info("Heatmap scheduler and worker started.")
+    
     yield
-    task.cancel()
-    logger.info("ELO worker stopped.")
+    
+    elo_task.cancel()
+    heatmap_sched_task.cancel()
+    heatmap_work_task.cancel()
+    logger.info("Background workers stopped.")
 
 
 # Initialize slowapi limiter. Default is IP based.
@@ -75,6 +88,9 @@ app.include_router(admin_router, prefix="/api/v1/admin", tags=["Admin"])
 app.include_router(questions_router, prefix="/api/v1/questions", tags=["Questions"])
 app.include_router(attempts_router, prefix="/api/v1/attempts", tags=["Attempts"])
 app.include_router(srs_router, prefix="/api/v1/srs", tags=["SRS"])
+app.include_router(analytics_router, prefix="/api/v1/analytics", tags=["Analytics"])
+app.include_router(taxonomy_router, prefix="/api/v1/taxonomy", tags=["Taxonomy"])
+app.include_router(mock_tests_router, prefix="/api/v1", tags=["MockTests"])
 
 
 @app.get("/health")
