@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.core.exceptions import PyqBaseException, pyq_exception_handler
 from app.core.rate_limit import get_fingerprint, get_jwt_subject
 from app.core.security import get_current_user, User
+from app.api.v1.auth_router import router as auth_router
 
 # Initialize slowapi limiter. Default is IP based.
 limiter = Limiter(key_func=get_remote_address)
@@ -31,6 +32,9 @@ app.add_middleware(SlowAPIMiddleware)
 
 # Register Custom Global Exception Handler
 app.add_exception_handler(PyqBaseException, pyq_exception_handler)
+
+# Register API Routers
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
 
 @app.get("/health")
 @limiter.exempt

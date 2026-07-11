@@ -10,6 +10,7 @@ security_scheme = HTTPBearer(auto_error=False)
 class User(BaseModel):
     id: UUID
     role: str
+    email: str
 
 def verify_jwt(token: str) -> dict:
     try:
@@ -36,11 +37,12 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     user_id = payload.get("sub")
     app_metadata = payload.get("app_metadata", {})
     role = app_metadata.get("role", "user")  # Fallback to user
+    email = payload.get("email", "")
     
     if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
         
-    return User(id=user_id, role=role)
+    return User(id=user_id, role=role, email=email)
 
 async def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role != "admin":
