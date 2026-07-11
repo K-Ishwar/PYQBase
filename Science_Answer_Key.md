@@ -105,7 +105,7 @@ Physics:
 24-d
 25-b
 26-c
-27:b
+27-b
 94-a
 
 Chemistry:
