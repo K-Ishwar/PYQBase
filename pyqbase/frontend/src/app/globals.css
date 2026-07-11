@@ -2,26 +2,88 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 210 40% 98%; /* #F8FAFC */
+    --foreground: 222 47% 11%; /* #0F172A */
+
+    --card: 0 0% 100%; /* #FFFFFF */
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 243 75% 59%; /* #4F46E5 */
+    --primary-foreground: 210 40% 98%;
+    --primary-dark: 244 55% 41%; /* #3730A3 */
+
+    --secondary: 199 89% 48%; /* #0EA5E9 */
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 214 32% 91%;
+    --muted-foreground: 215 25% 27%;
+
+    --accent: 214 32% 91%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 350 89% 60%; /* #F43F5E */
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 160 84% 39%; /* #10B981 */
+    --success-foreground: 0 0% 100%;
+    --success-bg: 149 80% 90%; /* #D1FAE5 */
+
+    --border: 214 32% 91%; /* #E2E8F0 */
+    --input: 214 32% 91%;
+    --ring: 243 75% 59%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222 47% 11%; /* #0F172A */
+    --foreground: 210 40% 98%; /* #F8FAFC */
+
+    --card: 217 33% 17%; /* #1E293B */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 217 33% 17%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 243 75% 59%; /* #4F46E5 */
+    --primary-foreground: 210 40% 98%;
+    --primary-dark: 244 55% 41%; /* #3730A3 */
+
+    --secondary: 199 89% 48%; /* #0EA5E9 */
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 215 25% 27%;
+    --muted-foreground: 214 32% 91%;
+
+    --accent: 215 25% 27%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 350 89% 60%; /* #F43F5E */
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 160 84% 39%; /* #10B981 */
+    --success-foreground: 210 40% 98%;
+    --success-bg: 160 84% 15%; /* darker success bg for dark mode */
+
+    --border: 215 25% 27%; /* #334155 */
+    --input: 215 25% 27%;
+    --ring: 243 75% 59%;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground leading-[1.6];
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-[-0.02em];
   }
 }
