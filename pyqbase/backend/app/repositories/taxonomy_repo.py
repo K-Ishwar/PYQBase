@@ -3,7 +3,18 @@ from sqlalchemy import select, delete
 from typing import Optional
 from uuid import UUID
 
-from app.models.taxonomy import SubjectDb, TopicDb, SubtopicDb
+from app.models.taxonomy import SubjectDb, TopicDb, SubtopicDb, ExamDb
+
+
+# ─── Exams ─────────────────────────────────────────────────────────────────────
+
+async def list_exams(db: AsyncSession) -> list[ExamDb]:
+    result = await db.execute(select(ExamDb).order_by(ExamDb.name))
+    return result.scalars().all()
+
+async def get_exam_by_slug(db: AsyncSession, slug: str) -> Optional[ExamDb]:
+    result = await db.execute(select(ExamDb).where(ExamDb.slug == slug))
+    return result.scalar_one_or_none()
 
 
 # ─── Subjects ──────────────────────────────────────────────────────────────────

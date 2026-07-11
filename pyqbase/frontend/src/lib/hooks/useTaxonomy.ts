@@ -15,6 +15,14 @@ export interface Subtopic extends TaxonomyItem {
   topic_id: string
 }
 
+export interface Exam {
+  id: string
+  name: string
+  slug: string
+  description?: string
+  icon?: string
+}
+
 export function useSubjects() {
   return useQuery<TaxonomyItem[]>({
     queryKey: ['subjects'],
@@ -53,6 +61,29 @@ export function useSubtopics(topicId?: string) {
 }
 
 // --- Public Endpoints ---
+export function usePublicExams() {
+  return useQuery<Exam[]>({
+    queryKey: ['public', 'taxonomy', 'exams'],
+    queryFn: async () => {
+      const res = await apiClient('/api/v1/taxonomy/exams')
+      if (!res.ok) throw new Error('Failed to fetch public exams')
+      return res.json()
+    },
+  })
+}
+
+export function usePublicExam(slug: string) {
+  return useQuery<Exam>({
+    queryKey: ['public', 'taxonomy', 'exams', slug],
+    queryFn: async () => {
+      const res = await apiClient(`/api/v1/taxonomy/exams/${slug}`)
+      if (!res.ok) throw new Error('Failed to fetch exam')
+      return res.json()
+    },
+    enabled: !!slug,
+  })
+}
+
 export function usePublicSubjects() {
   return useQuery({
     queryKey: ['public', 'taxonomy', 'subjects'],

@@ -6,6 +6,16 @@ from pydantic import BaseModel
 
 # ─── DB Table Models ──────────────────────────────────────────────────────────
 
+class ExamDb(SQLModel, table=True):
+    __tablename__ = "exams"
+
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    name: str
+    slug: str = Field(unique=True)
+    description: Optional[str] = None
+    icon: Optional[str] = None
+
+
 class SubjectDb(SQLModel, table=True):
     __tablename__ = "subjects"
 
@@ -30,6 +40,15 @@ class SubtopicDb(SQLModel, table=True):
 
 
 # ─── API Schemas ──────────────────────────────────────────────────────────────
+
+class ExamResponse(BaseModel):
+    id: UUID
+    name: str
+    slug: str
+    description: Optional[str] = None
+    icon: Optional[str] = None
+    model_config = {"from_attributes": True}
+
 
 class SubjectCreate(BaseModel):
     name: str
