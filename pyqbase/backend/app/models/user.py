@@ -9,6 +9,8 @@ class UserBase(SQLModel):
     subscription_status: str = Field(default="free")
     trial_ends_at: Optional[datetime] = None
     deleted_at: Optional[datetime] = None
+    razorpay_customer_id: Optional[str] = None
+    razorpay_subscription_id: Optional[str] = None
 
 class UserDb(UserBase, table=True):
     __tablename__ = "users"

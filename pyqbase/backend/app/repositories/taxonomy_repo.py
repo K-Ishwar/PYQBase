@@ -12,6 +12,10 @@ async def list_subjects(db: AsyncSession) -> list[SubjectDb]:
     result = await db.execute(select(SubjectDb).order_by(SubjectDb.name))
     return result.scalars().all()
 
+async def get_subject(db: AsyncSession, subject_id: UUID) -> Optional[SubjectDb]:
+    result = await db.execute(select(SubjectDb).where(SubjectDb.id == subject_id))
+    return result.scalar_one_or_none()
+
 async def create_subject(db: AsyncSession, name: str) -> SubjectDb:
     subject = SubjectDb(name=name)
     db.add(subject)
@@ -36,6 +40,10 @@ async def list_topics(db: AsyncSession, subject_id: UUID) -> list[TopicDb]:
         select(TopicDb).where(TopicDb.subject_id == subject_id).order_by(TopicDb.name)
     )
     return result.scalars().all()
+
+async def get_topic(db: AsyncSession, topic_id: UUID) -> Optional[TopicDb]:
+    result = await db.execute(select(TopicDb).where(TopicDb.id == topic_id))
+    return result.scalar_one_or_none()
 
 async def create_topic(db: AsyncSession, subject_id: UUID, name: str) -> TopicDb:
     topic = TopicDb(subject_id=subject_id, name=name)

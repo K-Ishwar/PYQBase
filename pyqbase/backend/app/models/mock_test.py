@@ -1,7 +1,7 @@
 from sqlmodel import SQLModel, Field
 from typing import Optional, List, Any
 from uuid import UUID, uuid4
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, ARRAY
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from pydantic import BaseModel
@@ -15,7 +15,7 @@ class MockTestDb(SQLModel, table=True):
     question_ids: List[UUID] = Field(sa_column=Column(ARRAY(PG_UUID), nullable=False))
     mode: str  # "custom" | "weak_area"
     score: Optional[float] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 # API Schemas
 class MockTestGenerateRequest(BaseModel):

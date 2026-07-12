@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../api-client'
-import { UUID } from 'crypto' // Just for types, better to use string for IDs in frontend
 
 export interface MockTestResponse {
   id: string
@@ -28,7 +27,13 @@ export function useGenerateMockTest() {
       })
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}))
-        throw new Error(errorData.detail || 'Failed to generate mock test')
+        const message =
+          errorData?.error?.message || errorData?.detail || 'Failed to generate mock test'
+        const code = errorData?.error?.code || 'UNKNOWN_ERROR'
+        const err = new Error(message) as Error & { code: string; status: number }
+        err.code = code
+        err.status = res.status
+        throw err
       }
       return res.json() as Promise<MockTestResponse>
     },

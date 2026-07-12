@@ -1,0 +1,11 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/pyqbase/backend"
+  ],
+  "python.analysis.venvPath": "${workspaceFolder}",
+  "python.analysis.venv": ".venv",
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  }
+}

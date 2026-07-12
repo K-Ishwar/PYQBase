@@ -41,7 +41,7 @@ async def post_attempt(
     result = await submit_attempt(
         db=db,
         user_id=current_user.id,
-        subscription_status=current_user.role,   # 'free' | 'active' etc from JWT
+        subscription_status=current_user.subscription_status,   # 'free' | 'active' etc from JWT
         question_id=body.question_id,
         selected_option=body.selected_option,
         time_taken_seconds=body.time_taken_seconds,

@@ -10,8 +10,14 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_KEY: str = Field(..., description="Supabase Service Role Key")
     GROQ_API_KEY: str = Field(..., description="API key for Groq")
     RESEND_API_KEY: str = Field(..., description="API key for Resend")
+    
+    # Razorpay Payment Gateway
+    RAZORPAY_KEY_ID: str | None = None
+    RAZORPAY_KEY_SECRET: str | None = None
+    RAZORPAY_WEBHOOK_SECRET: str | None = None
+    
     ENVIRONMENT: str = Field("development", description="Environment (development, staging, production)")
-    SENTRY_DSN: str = Field(None, description="Sentry DSN for error tracking")
+    SENTRY_DSN: str | None = Field(None, description="Sentry DSN for error tracking")
     
     # Comma-separated list in .env, parsing to list
     CORS_ORIGINS: str = Field(..., description="Comma separated list of allowed CORS origins")

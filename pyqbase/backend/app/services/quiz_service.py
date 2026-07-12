@@ -125,7 +125,7 @@ async def submit_attempt(
     # ── 4. Correctness (DROPPED = neutral) ─────────────────────────────────
     correct_option = question.correct_option
     if correct_option == "DROPPED":
-        is_correct = True          # neutral: no marks either way
+        is_correct = False         # neutral: no marks either way
         elo_score = 0.5            # draw
     else:
         is_correct = selected_option.upper() == correct_option

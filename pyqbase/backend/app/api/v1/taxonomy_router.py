@@ -30,3 +30,25 @@ async def list_subtopics(
 ):
     """Publicly accessible endpoint to list subtopics for a topic."""
     return await taxonomy_repo.list_subtopics(db, topic_id)
+
+
+@router.get("/subjects/{subject_id}", response_model=SubjectResponse)
+async def get_subject(
+    subject_id: UUID,
+    db: AsyncSession = Depends(get_db)
+):
+    subject = await taxonomy_repo.get_subject(db, subject_id)
+    if not subject:
+        raise HTTPException(status_code=404, detail="Subject not found")
+    return subject
+
+
+@router.get("/topics/{topic_id}", response_model=TopicResponse)
+async def get_topic(
+    topic_id: UUID,
+    db: AsyncSession = Depends(get_db)
+):
+    topic = await taxonomy_repo.get_topic(db, topic_id)
+    if not topic:
+        raise HTTPException(status_code=404, detail="Topic not found")
+    return topic

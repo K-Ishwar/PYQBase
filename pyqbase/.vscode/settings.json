@@ -1,0 +1,11 @@
+{
+  "python.defaultInterpreterPath": "c:\\Users\\Admin\\Desktop\\Website\\PYQBase\\.venv\\Scripts\\python.exe",
+  "python.analysis.venvPath": "c:\\Users\\Admin\\Desktop\\Website\\PYQBase",
+  "python.analysis.venv": ".venv",
+  "python.analysis.extraPaths": [
+    "c:\\Users\\Admin\\Desktop\\Website\\PYQBase\\pyqbase\\backend"
+  ],
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  }
+}

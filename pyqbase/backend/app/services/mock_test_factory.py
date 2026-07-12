@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, true
 from uuid import UUID
 from typing import List
 
@@ -68,7 +68,7 @@ class MockTestFactory:
                     and_(
                         QuestionDb.exam == exam,
                         TopicDb.subject_id == subject_id,
-                        QuestionDb.id.notin_(wrong_ids) if wrong_ids else True
+                        QuestionDb.id.notin_(wrong_ids) if wrong_ids else true()
                     )
                 )
                 .order_by(QuestionDb.elo_rating.desc()) # Give harder questions

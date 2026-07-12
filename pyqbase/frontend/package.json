@@ -29,7 +29,9 @@
     "tailwind-merge": "^3.6.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.4.3",
-    "zustand": "^5.0.14"
+    "zustand": "^5.0.14",
+    "@vercel/analytics": "^1.2.2",
+    "@sentry/nextjs": "^8.26.0"
   },
   "devDependencies": {
     "@types/node": "^20",

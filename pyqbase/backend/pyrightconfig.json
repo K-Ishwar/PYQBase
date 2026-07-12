@@ -1,0 +1,10 @@
+{
+  "venvPath": "c:\\Users\\Admin\\Desktop\\Website\\PYQBase",
+  "venv": ".venv",
+  "pythonVersion": "3.12",
+  "pythonPlatform": "Windows",
+  "include": ["app"],
+  "exclude": ["**/__pycache__"],
+  "reportMissingImports": false,
+  "reportMissingModuleSource": false
+}
