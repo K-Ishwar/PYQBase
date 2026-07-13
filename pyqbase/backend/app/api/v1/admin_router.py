@@ -99,8 +99,8 @@ async def create_subject(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_admin_user),
 ):
-    subject = await taxonomy_repo.create_subject(db, payload.name)
-    await log_admin_action(db, admin.id, "subjects", subject.id, "CREATE",
+    subject = await taxonomy_repo.get_or_create_subject(db, payload.name)
+    await log_admin_action(db, admin.id, "subjects", subject.id, "CREATE_OR_GET",
                            new_payload={"name": subject.name})
     return subject
 
@@ -137,8 +137,8 @@ async def create_topic(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_admin_user),
 ):
-    topic = await taxonomy_repo.create_topic(db, subject_id, payload.name)
-    await log_admin_action(db, admin.id, "topics", topic.id, "CREATE",
+    topic = await taxonomy_repo.get_or_create_topic(db, subject_id, payload.name)
+    await log_admin_action(db, admin.id, "topics", topic.id, "CREATE_OR_GET",
                            new_payload={"name": topic.name, "subject_id": str(subject_id)})
     return topic
 
@@ -175,8 +175,8 @@ async def create_subtopic(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_admin_user),
 ):
-    subtopic = await taxonomy_repo.create_subtopic(db, topic_id, payload.name)
-    await log_admin_action(db, admin.id, "subtopics", subtopic.id, "CREATE",
+    subtopic = await taxonomy_repo.get_or_create_subtopic(db, topic_id, payload.name)
+    await log_admin_action(db, admin.id, "subtopics", subtopic.id, "CREATE_OR_GET",
                            new_payload={"name": subtopic.name, "topic_id": str(topic_id)})
     return subtopic
 

@@ -1,6 +1,7 @@
 "use client"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { apiClient } from "@/lib/api-client"
 
 export default function IngestionUploadPage() {
   const router = useRouter()
@@ -32,12 +33,9 @@ export default function IngestionUploadPage() {
     }
 
     try {
-      const response = await fetch("http://localhost:8000/api/v1/admin/ingestion/upload", {
+      const response = await apiClient("/api/v1/admin/ingestion/upload", {
         method: "POST",
         body: formData,
-        headers: {
-          // auth headers would go here in production
-        }
       })
 
       if (!response.ok) throw new Error("Failed to upload")
