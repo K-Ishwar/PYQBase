@@ -7,11 +7,10 @@ from fastapi import APIRouter, Depends, File, UploadFile, Form, BackgroundTasks,
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.auth import get_current_admin_user
+from app.core.security import get_admin_user as get_current_admin_user
 from app.models.user import UserDb
 from app.models.ingestion import IngestionStatus, ReviewStatus, StagedQuestionDb
-from app.models.question import QuestionDb, QuestionType
-from app.models.solution import SolutionDb
+from app.models.question import QuestionDb
 from app.models.audit_log import AuditLogDb
 from app.repositories import ingestion_repo
 from app.services.ingestion_service import process_ingestion_batch
@@ -143,31 +142,22 @@ async def publish_batch(
         if q.review_status == ReviewStatus.approved:
             # 1. Create Question
             new_q = QuestionDb(
-                subject_id=q.subject_id,
-                topic_id=q.topic_id,
                 subtopic_id=q.subtopic_id,
                 exam=batch.exam,
                 year=batch.year,
                 paper=batch.paper,
                 question_number=q.question_number,
-                question_stem=q.paraphrased_stem.get('en') if q.paraphrased_stem else q.raw_question_stem,
+                question_stem=q.paraphrased_stem.get('en') if q.paraphrased_stem else {"en": q.raw_question_stem},
                 options=q.paraphrased_options.get('en') if q.paraphrased_options else q.raw_options,
-                question_type=QuestionType.MULTIPLE_CHOICE,
-                difficulty_level="medium",
-                elo_rating=1500.0
+                correct_option=q.correct_option,
+                explanation=q.ai_explanation.get('en') if q.ai_explanation else None,
+                question_type="MCQ",
+                elo_rating=1500
             )
             db.add(new_q)
-            await db.flush() # To get the new_q.id
+            await db.flush()  # To get the new_q.id
             
-            # 2. Create Solution
-            new_sol = SolutionDb(
-                question_id=new_q.id,
-                correct_option=q.correct_option,
-                explanation=q.ai_explanation.get('en') if q.ai_explanation else None
-            )
-            db.add(new_sol)
-            
-            # 3. Create Audit Log
+            # 2. Create Audit Log
             log = AuditLogDb(
                 admin_id=admin_user.id,
                 table_name="questions",

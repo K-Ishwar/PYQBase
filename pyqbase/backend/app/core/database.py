@@ -5,7 +5,7 @@ from app.core.config import settings
 # Create async engine. Configured to route through PgBouncer (pool_size=20)
 # Note: PgBouncer transaction mode requires specific SQLAlchemy settings (pool_pre_ping=True)
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    settings.async_database_url,
     pool_size=20,
     max_overflow=0,
     pool_pre_ping=True,

@@ -25,7 +25,6 @@ class IngestionBatchDb(SQLModel, table=True):
     
     id: UUID = Field(
         default_factory=uuid4,
-        primary_key=True,
         sa_column=Column(pgUUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()"))
     )
     uploaded_by: UUID = Field(sa_column=Column(pgUUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False))
@@ -50,7 +49,6 @@ class StagedQuestionDb(SQLModel, table=True):
     
     id: UUID = Field(
         default_factory=uuid4,
-        primary_key=True,
         sa_column=Column(pgUUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()"))
     )
     batch_id: UUID = Field(sa_column=Column(pgUUID(as_uuid=True), sa.ForeignKey("ingestion_batches.id", ondelete="CASCADE"), nullable=False))
