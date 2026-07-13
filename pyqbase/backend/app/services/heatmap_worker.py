@@ -31,6 +31,8 @@ async def _schedule_heatmap_refresh() -> None:
         if now_ist.hour == 0 and now_ist.minute >= 1 or now_ist.hour > 0:
             # Check if a job was already created today (IST)
             start_of_day_utc = now_ist.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
+            # Strip tzinfo — the DB column is TIMESTAMP WITHOUT TIME ZONE
+            start_of_day_naive = start_of_day_utc.replace(tzinfo=None)
             
             row = (await db.execute(
                 text("""
@@ -39,7 +41,7 @@ async def _schedule_heatmap_refresh() -> None:
                       AND created_at >= :start_of_day
                     LIMIT 1
                 """),
-                {"start_of_day": start_of_day_utc}
+                {"start_of_day": start_of_day_naive}
             )).scalar_one_or_none()
             
             if not row:
@@ -105,7 +107,7 @@ async def _process_refresh_batch(db: AsyncSession) -> None:
             SET status = 'processing', locked_at = :now
             WHERE id = :id
         """),
-        {"now": datetime.now(timezone.utc), "id": job_id},
+        {"now": datetime.utcnow(), "id": job_id},
     )
     await db.commit()
 
