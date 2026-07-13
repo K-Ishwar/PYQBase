@@ -12,8 +12,8 @@ from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_excep
 
 from app.core.database import async_session_maker
 from app.core.config import settings
-from app.models.ingestion import IngestionStatus, StagedQuestionDb, ReviewStatus
-from app.repositories import ingestion_repo
+from app.models.ingestion import IngestionStatus, StagedQuestionDb, ReviewStatus, IngestionBatchDb
+from app.repositories import ingestion_repo, taxonomy_repo
 
 # Initialize Groq client
 # If GROQ_API_KEY is not in settings, this will throw an error when used, which is handled gracefully
@@ -115,7 +115,7 @@ async def generate_paraphrase(staged_question: StagedQuestionDb, strong_prompt: 
         return False, 0.0, str(e)
 
 
-async def generate_explanation(staged_question: StagedQuestionDb) -> Tuple[bool, Optional[str]]:
+async def generate_explanation(staged_question: StagedQuestionDb, batch: IngestionBatchDb, db: AsyncSession) -> Tuple[bool, Optional[str]]:
     """
     Generates the 4-part explanation.
     Returns (success_boolean, error_message).
@@ -125,17 +125,24 @@ async def generate_explanation(staged_question: StagedQuestionDb) -> Tuple[bool,
         return False, "Skipped explanation: correct_option is missing."
 
     instruction = (
-        "You are an expert tutor. Generate an explanation for the multiple choice question. "
+        "You are an expert tutor and subject matter expert. Generate an explanation for the multiple choice question, "
+        "and classify it into a Subject, Topic, and Subtopic hierarchy. "
         "Output JSON exactly in this format:\n"
         "{\n"
         "  \"concept_summary\": \"Brief overview of the core concept tested.\",\n"
         "  \"why_correct\": \"Detailed explanation of why the correct option is right.\",\n"
         "  \"why_others_wrong\": \"Explanation of why the other options are incorrect.\",\n"
-        "  \"exam_relevance_note\": \"Why this is relevant for competitive exams.\"\n"
+        "  \"exam_relevance_note\": \"Why this is relevant for competitive exams.\",\n"
+        "  \"taxonomy\": {\n"
+        "      \"subject\": \"Subject name (e.g. Science, History)\",\n"
+        "      \"topic\": \"Topic name (e.g. Physics, Ancient History)\",\n"
+        "      \"subtopic\": \"Subtopic name (e.g. Optics, Mauryan Empire)\"\n"
+        "  }\n"
         "}"
     )
     
     prompt = f"""
+    Context: This question is from the {batch.exam} exam, paper: '{batch.paper}'. Use this context to determine the appropriate Subject.
     Question Stem: {staged_question.paraphrased_stem.get('en') if staged_question.paraphrased_stem else staged_question.raw_question_stem}
     Options: {json.dumps(staged_question.paraphrased_options.get('en') if staged_question.paraphrased_options else staged_question.raw_options)}
     Correct Option: {staged_question.correct_option}
@@ -153,13 +160,29 @@ async def generate_explanation(staged_question: StagedQuestionDb) -> Tuple[bool,
         result["disclaimer"] = "AI-Generated · Verify from official sources"
         
         staged_question.ai_explanation = {"en": result}
+        
+        # Taxonomy Assignment
+        if "taxonomy" in result:
+            tax = result["taxonomy"]
+            sub_name = tax.get("subject", "Uncategorized")
+            top_name = tax.get("topic", "General")
+            subtop_name = tax.get("subtopic", "Miscellaneous")
+            
+            subject = await taxonomy_repo.get_or_create_subject(db, sub_name)
+            topic = await taxonomy_repo.get_or_create_topic(db, subject.id, top_name)
+            subtopic = await taxonomy_repo.get_or_create_subtopic(db, topic.id, subtop_name)
+            
+            staged_question.subject_id = subject.id
+            staged_question.topic_id = topic.id
+            staged_question.subtopic_id = subtopic.id
+
         return True, None
         
     except Exception as e:
         return False, str(e)
 
 
-async def process_question(db: AsyncSession, q: StagedQuestionDb):
+async def process_question(db: AsyncSession, q: StagedQuestionDb, batch: IngestionBatchDb):
     # Only process high confidence parsing
     if q.parse_confidence < 0.90:
         return
@@ -182,8 +205,8 @@ async def process_question(db: AsyncSession, q: StagedQuestionDb):
             notes = f"Failed Similarity Gate 4. Final Score: {sim_score:.2f}. " + (err if err else "")
             q.reviewer_notes = (q.reviewer_notes + "\n" + notes) if q.reviewer_notes else notes
     
-    # 2. Generate Explanation
-    exp_success, exp_err = await generate_explanation(q)
+    # 2. Generate Explanation & Taxonomy
+    exp_success, exp_err = await generate_explanation(q, batch, db)
     if not exp_success and "Skipped" not in str(exp_err):
         q.review_status = ReviewStatus.needs_edit
         notes = f"Explanation Gen Failed: {exp_err}"
@@ -198,7 +221,10 @@ async def process_question(db: AsyncSession, q: StagedQuestionDb):
         lexical_similarity_score=q.lexical_similarity_score,
         ai_explanation=q.ai_explanation,
         review_status=q.review_status,
-        reviewer_notes=q.reviewer_notes
+        reviewer_notes=q.reviewer_notes,
+        subject_id=q.subject_id,
+        topic_id=q.topic_id,
+        subtopic_id=q.subtopic_id
     )
 
 
@@ -215,7 +241,7 @@ async def enrich_batch(batch_id: UUID):
             # Process questions (can be done sequentially or concurrently. 
             # Sequential is safer for rate limits initially)
             for q in questions:
-                await process_question(db, q)
+                await process_question(db, q, batch)
                 
             # Update batch status to reviewing
             await ingestion_repo.update_batch_status(db, batch_id, IngestionStatus.reviewing)

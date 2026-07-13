@@ -48,6 +48,7 @@ export default async function AdminLayout({
           <AdminNavLink href="/admin" label="Dashboard" icon="⊞" />
           <AdminNavLink href="/admin/questions" label="Questions" icon="?" />
           <AdminNavLink href="/admin/taxonomy" label="Taxonomy" icon="⋮" />
+          <AdminNavLink href="/admin/ingestion" label="Bulk Ingestion" icon="↑" />
           <div className="pt-4 mt-4 border-t border-border">
             <AdminNavLink href="/" label="← Back to Site" icon="↩" />
           </div>

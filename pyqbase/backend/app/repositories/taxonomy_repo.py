@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, func
 from typing import Optional
 from uuid import UUID
 
@@ -22,6 +22,13 @@ async def create_subject(db: AsyncSession, name: str) -> SubjectDb:
     await db.commit()
     await db.refresh(subject)
     return subject
+
+async def get_or_create_subject(db: AsyncSession, name: str) -> SubjectDb:
+    result = await db.execute(select(SubjectDb).where(func.lower(SubjectDb.name) == name.lower()))
+    subject = result.scalar_one_or_none()
+    if subject:
+        return subject
+    return await create_subject(db, name)
 
 async def delete_subject(db: AsyncSession, subject_id: UUID) -> bool:
     result = await db.execute(select(SubjectDb).where(SubjectDb.id == subject_id))
@@ -52,6 +59,17 @@ async def create_topic(db: AsyncSession, subject_id: UUID, name: str) -> TopicDb
     await db.refresh(topic)
     return topic
 
+async def get_or_create_topic(db: AsyncSession, subject_id: UUID, name: str) -> TopicDb:
+    result = await db.execute(
+        select(TopicDb)
+        .where(TopicDb.subject_id == subject_id)
+        .where(func.lower(TopicDb.name) == name.lower())
+    )
+    topic = result.scalar_one_or_none()
+    if topic:
+        return topic
+    return await create_topic(db, subject_id, name)
+
 async def delete_topic(db: AsyncSession, topic_id: UUID) -> bool:
     result = await db.execute(select(TopicDb).where(TopicDb.id == topic_id))
     topic = result.scalar_one_or_none()
@@ -76,6 +94,17 @@ async def create_subtopic(db: AsyncSession, topic_id: UUID, name: str) -> Subtop
     await db.commit()
     await db.refresh(subtopic)
     return subtopic
+
+async def get_or_create_subtopic(db: AsyncSession, topic_id: UUID, name: str) -> SubtopicDb:
+    result = await db.execute(
+        select(SubtopicDb)
+        .where(SubtopicDb.topic_id == topic_id)
+        .where(func.lower(SubtopicDb.name) == name.lower())
+    )
+    subtopic = result.scalar_one_or_none()
+    if subtopic:
+        return subtopic
+    return await create_subtopic(db, topic_id, name)
 
 async def delete_subtopic(db: AsyncSession, subtopic_id: UUID) -> bool:
     result = await db.execute(select(SubtopicDb).where(SubtopicDb.id == subtopic_id))

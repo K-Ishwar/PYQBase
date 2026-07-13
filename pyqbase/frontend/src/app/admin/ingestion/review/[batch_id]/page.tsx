@@ -12,8 +12,14 @@ export default function ReviewBatchPage() {
   const [publishing, setPublishing] = useState(false)
   const [error, setError] = useState("")
 
+  // Taxonomy states
+  const [subjects, setSubjects] = useState<any[]>([])
+  const [topics, setTopics] = useState<any[]>([])
+  const [subtopics, setSubtopics] = useState<any[]>([])
+
   useEffect(() => {
     fetchData()
+    fetchTaxonomy()
     // Poll every 5 seconds if still parsing or reviewing
     const interval = setInterval(() => {
       if (batch?.status === "parsing" || batch?.status === "reviewing") {
@@ -38,12 +44,63 @@ export default function ReviewBatchPage() {
     }
   }
 
-  const updateQuestionStatus = async (id: string, status: string) => {
+  const fetchTaxonomy = async () => {
+    try {
+      const subRes = await fetch("http://localhost:8000/api/v1/taxonomy/subjects")
+      if (subRes.ok) setSubjects(await subRes.json())
+      // For simplicity in UI, we fetch all topics and subtopics for now if we can,
+      // but the API requires subject_id for topics. We will fetch them lazily or just fetch all topics/subtopics if we modify the API.
+      // Wait, let's just make it simpler by relying on the auto-classification.
+      // We will fetch topics/subtopics dynamically when a user clicks, or if the question already has them.
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  // Helper to fetch topics when a subject is selected/known
+  const loadTopics = async (subjectId: string) => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/taxonomy/subjects/${subjectId}/topics`)
+      if (res.ok) {
+        const data = await res.json()
+        setTopics(prev => {
+          const newTopics = [...prev]
+          data.forEach((d: any) => { if (!newTopics.find(t => t.id === d.id)) newTopics.push(d) })
+          return newTopics
+        })
+      }
+    } catch (err) {}
+  }
+
+  // Helper to fetch subtopics when a topic is selected/known
+  const loadSubtopics = async (topicId: string) => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/taxonomy/topics/${topicId}/subtopics`)
+      if (res.ok) {
+        const data = await res.json()
+        setSubtopics(prev => {
+          const newSubtopics = [...prev]
+          data.forEach((d: any) => { if (!newSubtopics.find(t => t.id === d.id)) newSubtopics.push(d) })
+          return newSubtopics
+        })
+      }
+    } catch (err) {}
+  }
+
+  // Initial load of taxonomy for questions that already have it
+  useEffect(() => {
+    questions.forEach(q => {
+      if (q.subject_id) loadTopics(q.subject_id)
+      if (q.topic_id) loadSubtopics(q.topic_id)
+    })
+  }, [questions])
+
+  const updateQuestionStatus = async (id: string, updates: any) => {
     try {
       await fetch(`http://localhost:8000/api/v1/admin/ingestion/staged/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ review_status: status })
+        body: JSON.stringify(updates)
       })
       fetchData()
     } catch (err) {
@@ -96,7 +153,7 @@ export default function ReviewBatchPage() {
             onClick={() => {
               questions.forEach(q => {
                 if (q.parse_confidence >= 0.95 && q.review_status !== "approved") {
-                  updateQuestionStatus(q.id, "approved")
+                  updateQuestionStatus(q.id, { review_status: "approved" })
                 }
               })
             }}
@@ -130,9 +187,9 @@ export default function ReviewBatchPage() {
                 </span>
               </div>
               <div className="space-x-2">
-                <button onClick={() => updateQuestionStatus(q.id, "approved")} className="px-3 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded text-sm font-medium">Approve</button>
-                <button onClick={() => updateQuestionStatus(q.id, "needs_edit")} className="px-3 py-1 bg-yellow-100 text-yellow-700 hover:bg-yellow-200 rounded text-sm font-medium">Needs Edit</button>
-                <button onClick={() => updateQuestionStatus(q.id, "rejected")} className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded text-sm font-medium">Reject</button>
+                <button onClick={() => updateQuestionStatus(q.id, { review_status: "approved" })} className="px-3 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded text-sm font-medium">Approve</button>
+                <button onClick={() => updateQuestionStatus(q.id, { review_status: "needs_edit" })} className="px-3 py-1 bg-yellow-100 text-yellow-700 hover:bg-yellow-200 rounded text-sm font-medium">Needs Edit</button>
+                <button onClick={() => updateQuestionStatus(q.id, { review_status: "rejected" })} className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded text-sm font-medium">Reject</button>
               </div>
             </div>
 
@@ -180,9 +237,40 @@ export default function ReviewBatchPage() {
 
                 {/* Subject/Topic Assignment */}
                 <div className="grid grid-cols-3 gap-2">
-                   <select className="text-sm p-2 border rounded"><option>Select Subject...</option></select>
-                   <select className="text-sm p-2 border rounded"><option>Select Topic...</option></select>
-                   <select className="text-sm p-2 border rounded"><option>Select Subtopic...</option></select>
+                   <select 
+                     className="text-sm p-2 border rounded bg-white" 
+                     value={q.subject_id || ""}
+                     onChange={(e) => {
+                       updateQuestionStatus(q.id, { subject_id: e.target.value, topic_id: null, subtopic_id: null })
+                       loadTopics(e.target.value)
+                     }}
+                   >
+                     <option value="">Select Subject...</option>
+                     {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                   </select>
+
+                   <select 
+                     className="text-sm p-2 border rounded bg-white" 
+                     value={q.topic_id || ""}
+                     disabled={!q.subject_id}
+                     onChange={(e) => {
+                       updateQuestionStatus(q.id, { topic_id: e.target.value, subtopic_id: null })
+                       loadSubtopics(e.target.value)
+                     }}
+                   >
+                     <option value="">Select Topic...</option>
+                     {topics.filter(t => t.subject_id === q.subject_id).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                   </select>
+
+                   <select 
+                     className="text-sm p-2 border rounded bg-white"
+                     value={q.subtopic_id || ""}
+                     disabled={!q.topic_id}
+                     onChange={(e) => updateQuestionStatus(q.id, { subtopic_id: e.target.value })}
+                   >
+                     <option value="">Select Subtopic...</option>
+                     {subtopics.filter(s => s.topic_id === q.topic_id).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                   </select>
                 </div>
               </div>
             </div>

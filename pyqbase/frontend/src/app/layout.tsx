@@ -9,12 +9,16 @@ import { Analytics } from "@vercel/analytics/react";
 
 const inter = Inter({ 
   subsets: ["latin"],
-  variable: "--font-inter", 
+  variable: "--font-inter",
+  display: "swap",
+  fallback: ["system-ui", "arial"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains-mono",
+  display: "swap",
+  fallback: ["ui-monospace", "monospace"],
 });
 
 export const metadata: Metadata = {
