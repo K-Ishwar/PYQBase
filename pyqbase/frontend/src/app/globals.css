@@ -4,75 +4,79 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%; /* #F8FAFC */
-    --foreground: 222 47% 11%; /* #0F172A */
+    /* Base Colors - Sophisticated Off-White */
+    --background: 210 40% 98%; /* #F8FAFC - Cool, soft off-white background */
+    --foreground: 222 47% 11%;
 
-    --card: 0 0% 100%; /* #FFFFFF */
+    --card: 0 0% 100%; /* Pure white cards for contrast against off-white background */
     --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 243 75% 59%; /* #4F46E5 */
+    /* Brand - Deep Indigo & Vibrant Purple/Cyan */
+    --primary: 255 83% 53%; /* #4F46E5 - vibrant indigo */
     --primary-foreground: 210 40% 98%;
-    --primary-dark: 244 55% 41%; /* #3730A3 */
+    --primary-dark: 260 70% 40%; 
 
-    --secondary: 199 89% 48%; /* #0EA5E9 */
+    --secondary: 199 89% 48%; /* Electric Cyan */
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 214 32% 91%;
-    --muted-foreground: 215 25% 27%;
+    --muted: 214 32% 91%; /* Slightly darker for better light mode contrast */
+    --muted-foreground: 215 16% 47%;
 
     --accent: 214 32% 91%;
     --accent-foreground: 222 47% 11%;
 
-    --destructive: 350 89% 60%; /* #F43F5E */
+    --destructive: 350 89% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --success: 160 84% 39%; /* #10B981 */
+    --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
-    --success-bg: 149 80% 90%; /* #D1FAE5 */
+    --success-bg: 149 80% 90%;
 
-    --border: 214 32% 91%; /* #E2E8F0 */
+    --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 243 75% 59%;
+    --ring: 255 83% 53%;
 
-    --radius: 0.5rem;
+    /* Friendlier, modern radii */
+    --radius: 0.75rem; 
   }
 
   .dark {
-    --background: 222 47% 11%; /* #0F172A */
-    --foreground: 210 40% 98%; /* #F8FAFC */
+    /* Midnight Blue / OLED Space Black */
+    --background: 224 71% 4%; /* #020817 */
+    --foreground: 213 31% 91%;
 
-    --card: 217 33% 17%; /* #1E293B */
-    --card-foreground: 210 40% 98%;
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
 
-    --popover: 217 33% 17%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 224 71% 4%;
+    --popover-foreground: 213 31% 91%;
 
-    --primary: 243 75% 59%; /* #4F46E5 */
+    --primary: 255 83% 63%; /* Slightly lighter for dark mode contrast */
     --primary-foreground: 210 40% 98%;
-    --primary-dark: 244 55% 41%; /* #3730A3 */
+    --primary-dark: 260 70% 50%;
 
-    --secondary: 199 89% 48%; /* #0EA5E9 */
+    --secondary: 199 89% 58%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 215 25% 27%;
-    --muted-foreground: 214 32% 91%;
+    --muted: 223 47% 11%;
+    --muted-foreground: 215.4 16.3% 56.9%;
 
-    --accent: 215 25% 27%;
+    --accent: 223 47% 11%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 350 89% 60%; /* #F43F5E */
+    --destructive: 350 89% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --success: 160 84% 39%; /* #10B981 */
+    --success: 160 84% 39%;
     --success-foreground: 210 40% 98%;
-    --success-bg: 160 84% 15%; /* darker success bg for dark mode */
+    --success-bg: 160 84% 15%;
 
-    --border: 215 25% 27%; /* #334155 */
-    --input: 215 25% 27%;
-    --ring: 243 75% 59%;
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+    --ring: 255 83% 63%;
   }
 }
 
@@ -84,6 +88,41 @@
     @apply bg-background text-foreground leading-[1.6];
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-[-0.02em];
+    font-family: var(--font-outfit), sans-serif;
+    @apply font-bold tracking-tight;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-background/60 backdrop-blur-xl border border-black/5 dark:border-white/10;
+  }
+  
+  /* Next-level liquid glass effect */
+  .liquid-glass {
+    @apply bg-white/40 dark:bg-black/40 backdrop-blur-2xl backdrop-saturate-150 border border-white/20 dark:border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)];
+  }
+  
+  .glass-card {
+    @apply bg-card/60 backdrop-blur-xl border border-black/5 dark:border-white/5 shadow-xl;
+  }
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary;
+  }
+  
+  /* Mesh Background for Hero Sections */
+  .mesh-bg {
+    background-color: hsl(var(--background));
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(253,83%,95%,1) 0, transparent 50%), 
+      radial-gradient(at 50% 0%, hsla(199,89%,95%,1) 0, transparent 50%), 
+      radial-gradient(at 100% 0%, hsla(339,49%,95%,1) 0, transparent 50%);
+  }
+  
+  .dark .mesh-bg {
+    background-image: 
+      radial-gradient(at 40% 20%, hsla(255,83%,53%,0.15) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, hsla(199,89%,48%,0.15) 0px, transparent 50%),
+      radial-gradient(at 0% 50%, hsla(255,83%,53%,0.1) 0px, transparent 50%);
   }
 }

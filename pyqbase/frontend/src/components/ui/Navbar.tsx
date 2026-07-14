@@ -7,6 +7,7 @@ import { useTheme } from "next-themes"
 import { Search, Moon, Sun, X, User as UserIcon, LogOut } from "lucide-react"
 import { useAuth } from "@/components/providers/auth-provider"
 import { createClient } from "@/lib/supabase/client"
+import { MagneticButton } from "@/components/ui/MagneticButton"
 
 export function Navbar() {
   const { setTheme, theme } = useTheme()
@@ -56,7 +57,7 @@ export function Navbar() {
   }
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
+    <nav className="sticky top-0 z-50 w-full liquid-glass border-b-0">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
@@ -132,7 +133,7 @@ export function Navbar() {
                   </button>
                   
                   {profileOpen && (
-                    <div className="absolute right-0 mt-2 w-48 rounded-md border bg-card shadow-lg py-1 z-50">
+                    <div className="absolute right-0 mt-2 w-48 rounded-md glass-card py-1 z-50">
                       <div className="px-4 py-2 border-b border-border/50">
                         <p className="text-sm truncate text-muted-foreground">{user.email}</p>
                       </div>
@@ -154,12 +155,11 @@ export function Navbar() {
                   >
                     Login
                   </Link>
-                  <Link
-                    href="/signup"
-                    className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary-dark transition-colors"
-                  >
-                    Sign Up
-                  </Link>
+                  <MagneticButton className="px-4 py-2 text-sm font-bold text-primary-foreground bg-primary rounded-md shadow-md shadow-primary/20 hover:bg-primary-dark hover:shadow-lg transition-colors">
+                    <Link href="/signup">
+                      Sign Up
+                    </Link>
+                  </MagneticButton>
                 </>
               )
             )}

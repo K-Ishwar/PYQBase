@@ -3,6 +3,7 @@
 import { useAuth } from "@/components/providers/auth-provider"
 import Link from "next/link"
 import { Calendar, TrendingUp, Target, Clock, Zap, BookOpen } from "lucide-react"
+import { Odometer } from "@/components/ui/Odometer"
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth()
@@ -41,7 +42,7 @@ export default function DashboardPage() {
             <span className="text-xs font-medium text-muted-foreground bg-secondary px-2 py-1 rounded-full">FR-15.1</span>
           </div>
           <div>
-            <h3 className="text-4xl font-black">{mockStreak} <span className="text-xl text-muted-foreground font-medium">Days</span></h3>
+            <h3 className="text-4xl font-black"><Odometer value={mockStreak} /> <span className="text-xl text-muted-foreground font-medium">Days</span></h3>
             <p className="text-sm font-medium mt-1">Current Study Streak</p>
           </div>
         </div>
@@ -54,7 +55,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div>
-            <h3 className="text-4xl font-black">{mockSrsDue} <span className="text-xl text-muted-foreground font-medium">Cards</span></h3>
+            <h3 className="text-4xl font-black"><Odometer value={mockSrsDue} /> <span className="text-xl text-muted-foreground font-medium">Cards</span></h3>
             <p className="text-sm font-medium mt-1">Due for Daily Revision</p>
             <Link href="/srs" className="text-blue-500 text-sm font-medium hover:underline mt-2 inline-block">Start Revision &rarr;</Link>
           </div>
@@ -68,7 +69,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div>
-            <h3 className="text-4xl font-black">{mockTestsTaken} <span className="text-xl text-muted-foreground font-medium">Tests</span></h3>
+            <h3 className="text-4xl font-black"><Odometer value={mockTestsTaken} /> <span className="text-xl text-muted-foreground font-medium">Tests</span></h3>
             <p className="text-sm font-medium mt-1">Mock Tests Completed</p>
             <Link href="/mock-tests" className="text-green-500 text-sm font-medium hover:underline mt-2 inline-block">Take a Mock Test &rarr;</Link>
           </div>

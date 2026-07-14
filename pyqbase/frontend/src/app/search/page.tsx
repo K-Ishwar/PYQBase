@@ -8,6 +8,7 @@ import { useSearch } from '@/lib/hooks/useSearch'
 import { useAuth } from '@/components/providers/auth-provider'
 import { SearchResultCard } from '@/components/ui/SearchResultCard'
 import { SearchResultSkeletonList } from '@/components/ui/SearchResultSkeleton'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const EXAMS = [
   { value: '', label: 'All Exams' },
@@ -196,14 +197,26 @@ function SearchContent() {
           )}
 
           {/* Results list */}
-          {!isFetching && results.map((item, i) => (
-            <SearchResultCard
-              key={item.id}
-              item={item}
-              query={debouncedQuery}
-              isPremiumLocked={!isAdmin && offset === 0 && i >= FREE_QUOTA}
-            />
-          ))}
+          <motion.div layout className="space-y-4">
+            <AnimatePresence mode="popLayout">
+              {results.map((item, i) => (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  key={item.id}
+                >
+                  <SearchResultCard
+                    item={item}
+                    query={debouncedQuery}
+                    isPremiumLocked={!isAdmin && offset === 0 && i >= FREE_QUOTA}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
 
           {/* Pagination */}
           {meta && (meta.has_next || offset > 0) && !isFetching && (
