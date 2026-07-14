@@ -56,6 +56,8 @@ export function SearchResultCard({ item, query, isPremiumLocked }: SearchResultC
         <PillBadge variant="exam">{EXAM_LABELS[item.exam] ?? item.exam}</PillBadge>
         <PillBadge variant="default">{item.year}</PillBadge>
         <PillBadge variant="default">{item.paper}</PillBadge>
+        {item.subject_name && <PillBadge variant="default" className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800">{item.subject_name}</PillBadge>}
+        {item.topic_name && <PillBadge variant="default" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800">{item.topic_name}</PillBadge>}
         <span className="ml-auto font-mono text-xs text-muted-foreground">
           #{item.question_number}
         </span>

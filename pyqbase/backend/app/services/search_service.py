@@ -97,7 +97,10 @@ async def search_questions(
             q.image_url,
             q.subtopic_id,
             q.elo_rating,
-            q.created_at
+            q.created_at,
+            st.name AS subtopic_name,
+            t.name AS topic_name,
+            s.name AS subject_name
             {rank_col}
         FROM questions q
         {joins}
@@ -117,7 +120,11 @@ async def search_questions(
 
     params: dict = {"limit": limit, "offset": offset}
     rank_col = ""
-    joins = ""
+    joins = """
+        JOIN subtopics st ON q.subtopic_id = st.id
+        JOIN topics t ON st.topic_id = t.id
+        JOIN subjects s ON t.subject_id = s.id
+    """
     filters = ""
     order = "ORDER BY q.created_at DESC"
 
@@ -140,17 +147,12 @@ async def search_questions(
         params["year"] = year
 
     # ── Subject / topic filters via subtopic join ──────────────────────────
-    if subject_id or topic_id:
-        joins = """
-            JOIN subtopics st ON q.subtopic_id = st.id
-            JOIN topics t ON st.topic_id = t.id
-        """
-        if topic_id:
-            filters += " AND t.id = :topic_id"
-            params["topic_id"] = topic_id
-        elif subject_id:
-            filters += " AND t.subject_id = :subject_id"
-            params["subject_id"] = subject_id
+    if topic_id:
+        filters += " AND t.id = :topic_id"
+        params["topic_id"] = topic_id
+    elif subject_id:
+        filters += " AND s.id = :subject_id"
+        params["subject_id"] = subject_id
 
     # ── Year sort fallback ──────────────────────────────────────────────────
     if sort == "year_desc" or (not q and sort != "relevance"):
@@ -178,6 +180,9 @@ async def search_questions(
             has_image=row["has_image"],
             image_url=row["image_url"],
             subtopic_id=row["subtopic_id"],
+            subject_name=row["subject_name"],
+            topic_name=row["topic_name"],
+            subtopic_name=row["subtopic_name"],
             elo_rating=row["elo_rating"],
             ts_rank=float(row["ts_rank"]) if "ts_rank" in row.keys() and row["ts_rank"] is not None else None,
             created_at=row["created_at"],

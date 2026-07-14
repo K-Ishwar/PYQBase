@@ -210,25 +210,30 @@ async def enrich_batch(batch_id: UUID):
                 taxonomy_tree[s.name] = [t.name for t in topics]
             taxonomy_context = json.dumps(taxonomy_tree, indent=2)
 
-            for idx, q in enumerate(questions):
-                logger.info(f"[enrich_batch] {idx + 1}/{len(questions)} — Q{q.question_number}")
-                try:
-                    await process_question(db, q, batch, taxonomy_context)
-                except Exception as q_err:
-                    logger.error(
-                        f"[enrich_batch] Q{q.question_number} crashed: {q_err}\n"
-                        f"{traceback.format_exc()}"
-                    )
+            semaphore = asyncio.Semaphore(5)
+
+            async def bound_process_question(idx, q):
+                async with semaphore:
+                    logger.info(f"[enrich_batch] {idx + 1}/{len(questions)} — Q{q.question_number}")
                     try:
-                        await ingestion_repo.update_staged_question(
-                            db,
-                            q.id,
-                            review_status=ReviewStatus.needs_edit,
-                            reviewer_notes=f"Processing error: {str(q_err)}",
+                        await process_question(db, q, batch, taxonomy_context)
+                    except Exception as q_err:
+                        logger.error(
+                            f"[enrich_batch] Q{q.question_number} crashed: {q_err}\n"
+                            f"{traceback.format_exc()}"
                         )
-                    except Exception:
-                        pass
-                    continue
+                        try:
+                            await ingestion_repo.update_staged_question(
+                                db,
+                                q.id,
+                                review_status=ReviewStatus.needs_edit,
+                                reviewer_notes=f"Processing error: {str(q_err)}",
+                            )
+                        except Exception:
+                            pass
+
+            tasks = [bound_process_question(idx, q) for idx, q in enumerate(questions)]
+            await asyncio.gather(*tasks)
 
             await ingestion_repo.update_batch_status(db, batch_id, IngestionStatus.reviewing)
             logger.info(f"[enrich_batch] Completed batch {batch_id}")

@@ -1,6 +1,6 @@
 import { SearchBar } from "@/components/ui/SearchBar"
 import { ExamCard } from "@/components/ui/ExamCard"
-import { Shield, BookOpen, GraduationCap, Landmark, BookCopy, Globe, ArrowRight, Lightbulb, Leaf, Component } from "lucide-react"
+import { Shield, BookOpen, GraduationCap, Landmark, BookCopy, Globe, ArrowRight, Lightbulb, Leaf, Component, ShieldCheck, Briefcase, Compass } from "lucide-react"
 import Link from "next/link"
 import { DailyRevisionCard } from "@/components/ui/DailyRevisionCard"
 

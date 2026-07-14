@@ -156,10 +156,20 @@ export function QuizEngine({
           <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
             {question.year} · {question.paper}
           </span>
-          <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
+          {question.subject_name && (
+            <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+              {question.subject_name}
+            </span>
+          )}
+          {question.topic_name && (
+            <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+              {question.topic_name}
+            </span>
+          )}
+          <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground ml-auto">
             Q.{question.question_number}
           </span>
-          <span className="ml-auto text-xs font-mono text-muted-foreground">
+          <span className="text-xs font-mono text-muted-foreground">
             {elapsed}s
           </span>
         </div>
