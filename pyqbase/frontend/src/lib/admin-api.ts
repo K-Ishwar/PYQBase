@@ -28,7 +28,7 @@ async function adminFetch<T>(
 // ─── Question Types ────────────────────────────────────────────────────────
 
 export interface QuestionUpsertPayload {
-  exam: 'UPSC_CSE' | 'CAPF' | 'MPSC' | 'CDS'
+  exam: 'UPSC CSE' | 'UPSC CAPF' | 'MPSC Rajyseva' | 'UPSC CDS'
   year: number
   paper: string
   question_number: number

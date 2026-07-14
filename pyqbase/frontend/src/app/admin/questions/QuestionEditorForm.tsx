@@ -11,7 +11,7 @@ import { useSubjects, useTopics, useSubtopics } from '@/lib/hooks/useTaxonomy'
 // ─── Zod Schema — mirrors backend QuestionUpsertPayload ─────────────────────
 
 const questionSchema = z.object({
-  exam: z.enum(['UPSC_CSE', 'CAPF', 'MPSC', 'CDS']),
+  exam: z.enum(['UPSC CSE', 'UPSC CAPF', 'MPSC Rajyseva', 'UPSC CDS']),
   year: z.coerce.number().min(1990).max(2030),
   paper: z.string().min(1, 'Paper is required'),
   question_number: z.coerce.number().min(1),
@@ -67,7 +67,7 @@ export function QuestionEditorForm({ questionId, defaultValues }: QuestionEditor
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(questionSchema) as any,
     defaultValues: {
-      exam: 'UPSC_CSE',
+      exam: 'UPSC CSE',
       year: new Date().getFullYear(),
       paper: 'Prelims',
       correct_option: 'A',
@@ -189,10 +189,10 @@ export function QuestionEditorForm({ questionId, defaultValues }: QuestionEditor
           <div>
             <label className={labelClass}>Exam *</label>
             <select {...register('exam')} className={fieldClass}>
-              <option value="UPSC_CSE">UPSC CSE</option>
-              <option value="CAPF">CAPF</option>
-              <option value="MPSC">MPSC</option>
-              <option value="CDS">CDS</option>
+              <option value="UPSC CSE">UPSC CSE</option>
+              <option value="UPSC CAPF">UPSC CAPF</option>
+              <option value="MPSC Rajyseva">MPSC Rajyseva</option>
+              <option value="UPSC CDS">UPSC CDS</option>
             </select>
             {errors.exam && <p className={errorClass}>{errors.exam.message}</p>}
           </div>

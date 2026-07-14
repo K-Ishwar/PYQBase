@@ -14,7 +14,7 @@ export default function Home() {
           Every Topic. One <span className="text-primary">Base</span>.
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground max-w-2xl">
-          Topic-wise Previous Year Questions for UPSC, CAPF, MPSC & more.
+          Topic-wise Previous Year Questions for UPSC CSE, UPSC CAPF, MPSC Rajyseva & more.
         </p>
         
         <div className="w-full flex justify-center pt-4">
@@ -38,22 +38,22 @@ export default function Home() {
             href="/exams/upsc-cse" 
           />
           <ExamCard 
-            title="CAPF" 
+            title="UPSC CAPF" 
             description="Central Armed Police Forces" 
-            icon={<Shield className="h-8 w-8" />} 
-            href="/exams/capf"
+            icon={<ShieldCheck className="h-6 w-6 text-green-600" />} 
+            href="/search?exam=UPSC CAPF"
           />
           <ExamCard 
-            title="MPSC" 
-            description="Maharashtra Public Service Commission" 
-            icon={<BookOpen className="h-8 w-8" />} 
-            href="/exams/mpsc"
+            title="MPSC Rajyseva" 
+            description="Maharashtra State Services" 
+            icon={<Briefcase className="h-6 w-6 text-orange-600" />} 
+            href="/search?exam=MPSC Rajyseva"
           />
           <ExamCard 
-            title="CDS" 
+            title="UPSC CDS" 
             description="Combined Defence Services" 
-            icon={<GraduationCap className="h-8 w-8" />} 
-            href="/exams/cds"
+            icon={<Compass className="h-6 w-6 text-red-600" />} 
+            href="/search?exam=UPSC CDS"
           />
         </div>
       </section>

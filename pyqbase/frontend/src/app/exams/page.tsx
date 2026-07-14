@@ -2,10 +2,10 @@ import Link from "next/link"
 
 export default function ExamsPage() {
   const EXAMS = [
-    { id: "UPSC_CSE", name: "UPSC Civil Services", description: "General Studies Paper 1 & 2" },
-    { id: "CAPF", name: "CAPF (AC)", description: "Central Armed Police Forces" },
-    { id: "MPSC", name: "MPSC State Services", description: "Maharashtra Public Service Commission" },
-    { id: "CDS", name: "Combined Defence Services", description: "UPSC CDS I & II" },
+    { id: "UPSC CSE", name: "UPSC Civil Services", description: "General Studies Paper 1 & 2" },
+    { id: "UPSC CAPF", name: "UPSC CAPF", description: "Central Armed Police Forces" },
+    { id: "MPSC Rajyseva", name: "MPSC Rajyseva", description: "Maharashtra Public Service Commission" },
+    { id: "UPSC CDS", name: "UPSC CDS", description: "Combined Defence Services" },
   ]
 
   return (

@@ -38,10 +38,10 @@ function highlightText(text: string, query?: string): React.ReactNode {
 }
 
 const EXAM_LABELS: Record<string, string> = {
-  UPSC_CSE: 'UPSC CSE',
-  CAPF: 'CAPF',
-  MPSC: 'MPSC',
-  CDS: 'CDS',
+  'UPSC CSE': 'UPSC CSE',
+  'UPSC CAPF': 'UPSC CAPF',
+  'MPSC Rajyseva': 'MPSC Rajyseva',
+  'UPSC CDS': 'UPSC CDS',
 }
 
 export function SearchResultCard({ item, query, isPremiumLocked }: SearchResultCardProps) {

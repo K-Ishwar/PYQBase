@@ -13,7 +13,8 @@ router = APIRouter()
 @router.get("", response_model=SearchResponse)
 async def list_questions(
     q: Optional[str] = Query(None, description="Full-text search query"),
-    exam: Optional[str] = Query(None, description="Filter by exam (UPSC_CSE, CAPF, MPSC, CDS)"),
+    exam: Optional[str] = Query(None, description="Filter by exam (UPSC CSE, UPSC CAPF, MPSC Rajyseva, UPSC CDS)"),
+    year: Optional[int] = Query(None, description="Filter by year"),
     subject_id: Optional[str] = Query(None, description="Filter by subject UUID"),
     topic_id: Optional[str] = Query(None, description="Filter by topic UUID"),
     sort: str = Query("relevance", description="Sort: 'relevance' or 'year_desc'"),
@@ -31,6 +32,7 @@ async def list_questions(
         db,
         q=q,
         exam=exam,
+        year=year,
         subject_id=subject_id,
         topic_id=topic_id,
         sort=sort,

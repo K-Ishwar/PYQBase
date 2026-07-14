@@ -5,7 +5,7 @@ import { apiClient } from "@/lib/api-client"
 
 export default function IngestionUploadPage() {
   const router = useRouter()
-  const [exam, setExam] = useState("UPSC")
+  const [exam, setExam] = useState("UPSC CSE")
   const [year, setYear] = useState(new Date().getFullYear())
   const [paper, setPaper] = useState("GS Paper 1")
   const [paperFile, setPaperFile] = useState<File | null>(null)
@@ -226,7 +226,12 @@ export default function IngestionUploadPage() {
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Exam</label>
-            <input type="text" value={exam} onChange={(e) => setExam(e.target.value)} className="w-full p-2 border rounded-md" required />
+            <select value={exam} onChange={(e) => setExam(e.target.value)} className="w-full p-2 border rounded-md" required>
+              <option value="UPSC CSE">UPSC CSE</option>
+              <option value="UPSC CAPF">UPSC CAPF</option>
+              <option value="MPSC Rajyseva">MPSC Rajyseva</option>
+              <option value="UPSC CDS">UPSC CDS</option>
+            </select>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Year</label>

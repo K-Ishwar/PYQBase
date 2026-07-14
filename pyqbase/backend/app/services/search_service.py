@@ -27,9 +27,9 @@ _CACHE_MAX = 512   # max entries to avoid unbounded growth
 
 
 def _cache_key(q: str, exam: Optional[str], subject_id: Optional[str],
-               topic_id: Optional[str], sort: str, limit: int, offset: int) -> str:
+               topic_id: Optional[str], year: Optional[int], sort: str, limit: int, offset: int) -> str:
     raw = json.dumps(
-        [q, exam, subject_id, topic_id, sort, limit, offset], sort_keys=True
+        [q, exam, subject_id, topic_id, year, sort, limit, offset], sort_keys=True
     )
     return hashlib.sha256(raw.encode()).hexdigest()
 
@@ -60,6 +60,7 @@ async def search_questions(
     *,
     q: Optional[str] = None,
     exam: Optional[str] = None,
+    year: Optional[int] = None,
     subject_id: Optional[str] = None,
     topic_id: Optional[str] = None,
     sort: str = "relevance",
@@ -76,7 +77,7 @@ async def search_questions(
     """
     limit = min(limit, 100)  # hard cap
 
-    ck = _cache_key(q or "", exam, subject_id, topic_id, sort, limit, offset)
+    ck = _cache_key(q or "", exam, subject_id, topic_id, year, sort, limit, offset)
     cached = _cache_get(ck)
     if cached:
         return cached
@@ -132,6 +133,11 @@ async def search_questions(
     if exam:
         filters += " AND q.exam = :exam"
         params["exam"] = exam
+
+    # ── Year filter ─────────────────────────────────────────────────────────
+    if year:
+        filters += " AND q.year = :year"
+        params["year"] = year
 
     # ── Subject / topic filters via subtopic join ──────────────────────────
     if subject_id or topic_id:

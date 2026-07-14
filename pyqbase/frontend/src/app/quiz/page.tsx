@@ -7,7 +7,7 @@ import { QuizEngine } from '@/components/ui/QuizEngine'
 const MOCK_QUESTIONS = [
   {
     id: 'aaaaaaaa-0000-0000-0000-000000000001',
-    exam: 'UPSC_CSE',
+    exam: 'UPSC CSE',
     year: 2024,
     paper: 'Prelims',
     question_number: 1,
@@ -29,7 +29,7 @@ const MOCK_QUESTIONS = [
   },
   {
     id: 'bbbbbbbb-0000-0000-0000-000000000002',
-    exam: 'CAPF',
+    exam: 'UPSC CAPF',
     year: 2023,
     paper: 'Paper I',
     question_number: 42,
@@ -51,7 +51,7 @@ const MOCK_QUESTIONS = [
   },
   {
     id: 'cccccccc-0000-0000-0000-000000000003',
-    exam: 'MPSC',
+    exam: 'MPSC Rajyseva',
     year: 2022,
     paper: 'Prelims',
     question_number: 15,

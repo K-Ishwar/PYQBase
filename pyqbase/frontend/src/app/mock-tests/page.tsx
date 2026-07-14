@@ -8,7 +8,7 @@ import { useAuth } from '@/components/providers/auth-provider'
 import { Lock, Zap, BookOpen, Target, ChevronRight, History } from 'lucide-react'
 import Link from 'next/link'
 
-const EXAMS = ['UPSC_CSE', 'CAPF', 'MPSC', 'CDS']
+const EXAMS = ['UPSC CSE', 'UPSC CAPF', 'MPSC Rajyseva', 'UPSC CDS']
 
 export default function MockTestsPage() {
   const router = useRouter()
@@ -22,9 +22,8 @@ export default function MockTestsPage() {
   const [mode, setMode] = useState<'custom' | 'weak_area'>('custom')
   const [error, setError] = useState<string | null>(null)
 
-  // Treat as free unless user has subscription data from a backend /me call
-  // For now, read subscription_status from auth provider Supabase metadata
-  const isFree = true // will be replaced with actual subscription check
+  // Treat as free unless user has premium or admin role in app_metadata
+  const isFree = user?.app_metadata?.role !== 'admin' && user?.app_metadata?.subscription_status !== 'premium'
 
   const handleGenerate = async () => {
     if (!subjectId) { setError('Please select a subject.'); return }

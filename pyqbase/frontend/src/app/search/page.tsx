@@ -10,10 +10,10 @@ import { SearchResultSkeletonList } from '@/components/ui/SearchResultSkeleton'
 
 const EXAMS = [
   { value: '', label: 'All Exams' },
-  { value: 'UPSC_CSE', label: 'UPSC CSE' },
-  { value: 'CAPF', label: 'CAPF' },
-  { value: 'MPSC', label: 'MPSC' },
-  { value: 'CDS', label: 'CDS' },
+  { value: 'UPSC CSE', label: 'UPSC CSE' },
+  { value: 'UPSC CAPF', label: 'UPSC CAPF' },
+  { value: 'MPSC Rajyseva', label: 'MPSC Rajyseva' },
+  { value: 'UPSC CDS', label: 'UPSC CDS' },
 ]
 
 const SORTS = [
@@ -38,6 +38,7 @@ function SearchContent() {
 
   const [inputValue, setInputValue] = useState(searchParams.get('q') ?? '')
   const [exam, setExam] = useState(searchParams.get('exam') ?? '')
+  const [year, setYear] = useState<number | null>(searchParams.get('year') ? Number(searchParams.get('year')) : null)
   const [sort, setSort] = useState('relevance')
   const [offset, setOffset] = useState(0)
   const LIMIT = 10
@@ -49,13 +50,15 @@ function SearchContent() {
     const params = new URLSearchParams()
     if (debouncedQuery) params.set('q', debouncedQuery)
     if (exam) params.set('exam', exam)
+    if (year) params.set('year', String(year))
     router.replace(`/search?${params.toString()}`, { scroll: false })
     setOffset(0) // reset pagination on new search
-  }, [debouncedQuery, exam, router])
+  }, [debouncedQuery, exam, year, router])
 
   const { data, isFetching, isError } = useSearch({
     q: debouncedQuery || undefined,
     exam: exam || undefined,
+    year: year || undefined,
     sort,
     limit: LIMIT,
     offset,
@@ -79,7 +82,7 @@ function SearchContent() {
           Search <span className="text-primary">Every PYQ</span>
         </h1>
         <p className="text-muted-foreground mb-6">
-          Cross-exam full-text search across UPSC, CAPF, MPSC &amp; CDS.
+          Cross-exam full-text search across UPSC CSE, UPSC CAPF, MPSC Rajyseva &amp; UPSC CDS.
         </p>
         <div className="relative max-w-2xl mx-auto">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
@@ -117,6 +120,22 @@ function SearchContent() {
               ))}
             </div>
           </div>
+
+          {year && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
+                Year
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => setYear(null)}
+                  className={pillClass(true)}
+                >
+                  {year} &times;
+                </button>
+              </div>
+            </div>
+          )}
 
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">

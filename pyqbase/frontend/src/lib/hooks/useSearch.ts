@@ -32,6 +32,7 @@ export interface SearchResponse {
 export interface SearchParams {
   q?: string
   exam?: string
+  year?: number
   subject_id?: string
   topic_id?: string
   sort?: string
@@ -43,6 +44,7 @@ export function useSearch(params: SearchParams) {
   const queryString = new URLSearchParams()
   if (params.q) queryString.set('q', params.q)
   if (params.exam) queryString.set('exam', params.exam)
+  if (params.year) queryString.set('year', String(params.year))
   if (params.subject_id) queryString.set('subject_id', params.subject_id)
   if (params.topic_id) queryString.set('topic_id', params.topic_id)
   if (params.sort) queryString.set('sort', params.sort)
