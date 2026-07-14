@@ -42,6 +42,9 @@ pdfplumber>=0.11.0
 pytesseract>=0.3.10
 pdf2image>=1.17.0
 mistune>=3.0.2
+python-multipart>=0.0.9
 # AI Enrichment
 groq>=0.9.0
 tenacity>=9.0.0
+# DB
+supabase>=2.31.0
