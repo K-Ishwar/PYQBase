@@ -41,7 +41,29 @@ export async function updateSession(request: NextRequest) {
   // IMPORTANT: Do not add any logic between createServerClient and
   // supabase.auth.getUser(). A subtle bug in Next.js can cause session
   // tokens to be invalidated if auth checks are mixed in between.
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Onboarding Enforcement
+  const currentPath = request.nextUrl.pathname
+  const isAuthRoute = currentPath.startsWith('/login') || currentPath.startsWith('/signup') || currentPath.startsWith('/api') || currentPath.startsWith('/_next') || currentPath.startsWith('/onboarding') || currentPath.startsWith('/admin')
+  
+  // Route Protection for Logged Out Users
+  const isProtected = currentPath.startsWith('/mock-tests')
+  if (!user && isProtected) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  // Onboarding Enforcement for Logged In Users
+  if (user && !isAuthRoute) {
+    const hasCompletedOnboarding = user.user_metadata?.onboarding_completed === true
+    if (!hasCompletedOnboarding) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/onboarding'
+      return NextResponse.redirect(url)
+    }
+  }
 
   return supabaseResponse
 }

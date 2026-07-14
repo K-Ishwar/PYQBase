@@ -37,11 +37,14 @@ export default function SearchPage() {
 function SearchContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { isAdmin } = useAuth()
+  const { isAdmin, user } = useAuth()
+  const targetExam = user?.user_metadata?.target_exam
 
   const [inputValue, setInputValue] = useState(searchParams.get('q') ?? '')
-  const [exam, setExam] = useState(searchParams.get('exam') ?? '')
+  const [exam, setExam] = useState(searchParams.get('exam') ?? targetExam ?? '')
   const [year, setYear] = useState<number | null>(searchParams.get('year') ? Number(searchParams.get('year')) : null)
+  const subjectId = searchParams.get('subject_id')
+  
   const [sort, setSort] = useState('relevance')
   const [offset, setOffset] = useState(0)
   const LIMIT = 10
@@ -54,14 +57,16 @@ function SearchContent() {
     if (debouncedQuery) params.set('q', debouncedQuery)
     if (exam) params.set('exam', exam)
     if (year) params.set('year', String(year))
+    if (subjectId) params.set('subject_id', subjectId)
     router.replace(`/search?${params.toString()}`, { scroll: false })
     setOffset(0) // reset pagination on new search
-  }, [debouncedQuery, exam, year, router])
+  }, [debouncedQuery, exam, year, subjectId, router])
 
   const { data, isFetching, isError } = useSearch({
     q: debouncedQuery || undefined,
     exam: exam || undefined,
     year: year || undefined,
+    subject_id: subjectId || undefined,
     sort,
     limit: LIMIT,
     offset,

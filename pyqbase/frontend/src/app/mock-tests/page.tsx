@@ -30,10 +30,15 @@ export default function MockTestsPage() {
       .then(res => res.json())
       .then(data => {
         setExams(data)
-        if (data.length > 0) setExam(data[0])
+        const targetExam = user?.user_metadata?.target_exam
+        if (targetExam && data.includes(targetExam)) {
+          setExam(targetExam)
+        } else if (data.length > 0) {
+          setExam(data[0])
+        }
       })
       .catch(err => console.error("Failed to fetch exams:", err))
-  }, [])
+  }, [user])
 
   // Treat as free unless user has premium or admin role in app_metadata
   const isFree = user?.app_metadata?.role !== 'admin' && user?.app_metadata?.subscription_status !== 'premium'

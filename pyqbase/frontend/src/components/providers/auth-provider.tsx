@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
+import { useRouter, usePathname } from 'next/navigation'
 
 type AuthContextType = {
   user: User | null
@@ -37,6 +38,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase])
 
   const isAdmin = user?.app_metadata?.role === 'admin' || user?.user_metadata?.role === 'admin' || user?.email === 'omekhande4@gmail.com'
+
+  const router = useRouter()
+  const pathname = usePathname()
+
+  // Client-side onboarding and route protection
+  useEffect(() => {
+    if (isLoading) return
+
+    if (user) {
+      const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/onboarding') || pathname.startsWith('/admin')
+      if (!isAuthRoute && user.user_metadata?.onboarding_completed !== true) {
+        router.push('/onboarding')
+      }
+    } else {
+      // User is logged out
+      if (pathname.startsWith('/mock-tests')) {
+        router.push('/login')
+      }
+    }
+  }, [user, isLoading, pathname, router])
 
   return (
     <AuthContext.Provider value={{ user, isLoading, isAdmin }}>
