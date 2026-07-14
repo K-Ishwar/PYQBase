@@ -7,6 +7,8 @@ import Link from "next/link"
 import { DailyRevisionCard } from "@/components/ui/DailyRevisionCard"
 import { motion } from "framer-motion"
 
+import { useState, useEffect } from "react"
+
 export default function Home() {
   const staggerContainer = {
     hidden: { opacity: 0 },
@@ -22,6 +24,23 @@ export default function Home() {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 100 } }
   }
+
+  const [liveSubjects, setLiveSubjects] = useState<{ id: string, name: string }[]>([])
+  const [loadingSubjects, setLoadingSubjects] = useState(true)
+
+  useEffect(() => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
+    fetch(`${apiUrl}/api/v1/taxonomy/subjects`)
+      .then(res => res.json())
+      .then(data => {
+        setLiveSubjects(data.slice(0, 10))
+        setLoadingSubjects(false)
+      })
+      .catch(e => {
+        console.error("Failed to fetch subjects", e)
+        setLoadingSubjects(false)
+      })
+  }, [])
 
   return (
     <div className="container py-16 md:py-32 max-w-6xl mx-auto space-y-32">
@@ -89,7 +108,7 @@ export default function Home() {
               title="UPSC CAPF" 
               description="Central Armed Police Forces" 
               icon={<ShieldCheck className="h-8 w-8 text-green-600" />} 
-              href="/search?exam=UPSC CAPF"
+              href="/exams/upsc-capf"
             />
           </motion.div>
           <motion.div variants={fadeIn} className="h-full">
@@ -97,7 +116,7 @@ export default function Home() {
               title="MPSC Rajyseva" 
               description="Maharashtra State Services" 
               icon={<Briefcase className="h-8 w-8 text-orange-600" />} 
-              href="/search?exam=MPSC Rajyseva"
+              href="/exams/mpsc-rajyseva"
             />
           </motion.div>
           <motion.div variants={fadeIn} className="h-full">
@@ -105,7 +124,7 @@ export default function Home() {
               title="UPSC CDS" 
               description="Combined Defence Services" 
               icon={<Compass className="h-8 w-8 text-red-600" />} 
-              href="/search?exam=UPSC CDS"
+              href="/exams/upsc-cds"
             />
           </motion.div>
         </motion.div>
@@ -127,13 +146,13 @@ export default function Home() {
         </div>
         
         <div className="flex flex-wrap gap-4">
-          <SubjectPill icon={<Landmark className="h-4 w-4" />} name="Polity" />
-          <SubjectPill icon={<BookCopy className="h-4 w-4" />} name="History" />
-          <SubjectPill icon={<Globe className="h-4 w-4" />} name="Geography" />
-          <SubjectPill icon={<Component className="h-4 w-4" />} name="Economy" />
-          <SubjectPill icon={<Leaf className="h-4 w-4" />} name="Environment" />
-          <SubjectPill icon={<Lightbulb className="h-4 w-4" />} name="Science & Tech" />
-          <SubjectPill icon={<BookOpen className="h-4 w-4" />} name="Art & Culture" />
+          {loadingSubjects ? (
+             <div className="text-sm text-muted-foreground animate-pulse">Loading subjects...</div>
+          ) : (
+            liveSubjects.map(subject => (
+              <SubjectPill key={subject.id} icon={<BookOpen className="h-4 w-4" />} name={subject.name} />
+            ))
+          )}
         </div>
       </motion.section>
     </div>
