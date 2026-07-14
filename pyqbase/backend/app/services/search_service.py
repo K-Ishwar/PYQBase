@@ -130,7 +130,7 @@ async def search_questions(
         LEFT JOIN subjects s ON t.subject_id = s.id
     """
     filters = ""
-    order = "ORDER BY q.created_at DESC"
+    order = "ORDER BY q.created_at DESC, q.id ASC"
 
     # ── FTS filter ──────────────────────────────────────────────────────────
     if q and q.strip():

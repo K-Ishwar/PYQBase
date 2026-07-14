@@ -44,6 +44,7 @@ function SearchContent() {
   const [exam, setExam] = useState(searchParams.get('exam') ?? targetExam ?? '')
   const [year, setYear] = useState<number | null>(searchParams.get('year') ? Number(searchParams.get('year')) : null)
   const subjectId = searchParams.get('subject_id')
+  const topicId = searchParams.get('topic_id')
   
   const [sort, setSort] = useState('relevance')
   const [offset, setOffset] = useState(0)
@@ -58,15 +59,17 @@ function SearchContent() {
     if (exam) params.set('exam', exam)
     if (year) params.set('year', String(year))
     if (subjectId) params.set('subject_id', subjectId)
+    if (topicId) params.set('topic_id', topicId)
     router.replace(`/search?${params.toString()}`, { scroll: false })
     setOffset(0) // reset pagination on new search
-  }, [debouncedQuery, exam, year, subjectId, router])
+  }, [debouncedQuery, exam, year, subjectId, topicId, router])
 
   const { data, isFetching, isError } = useSearch({
     q: debouncedQuery || undefined,
     exam: exam || undefined,
     year: year || undefined,
     subject_id: subjectId || undefined,
+    topic_id: topicId || undefined,
     sort,
     limit: LIMIT,
     offset,
@@ -140,6 +143,46 @@ function SearchContent() {
                   className={pillClass(true)}
                 >
                   {year} &times;
+                </button>
+              </div>
+            </div>
+          )}
+
+          {subjectId && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
+                Subject
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    const params = new URLSearchParams(window.location.search);
+                    params.delete('subject_id');
+                    router.replace(`/search?${params.toString()}`, { scroll: false });
+                  }}
+                  className={pillClass(true)}
+                >
+                  Filtered Subject &times;
+                </button>
+              </div>
+            </div>
+          )}
+
+          {topicId && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
+                Topic
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    const params = new URLSearchParams(window.location.search);
+                    params.delete('topic_id');
+                    router.replace(`/search?${params.toString()}`, { scroll: false });
+                  }}
+                  className={pillClass(true)}
+                >
+                  Filtered Topic &times;
                 </button>
               </div>
             </div>

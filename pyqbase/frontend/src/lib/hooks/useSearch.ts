@@ -63,6 +63,6 @@ export function useSearch(params: SearchParams) {
     },
     // Keep previous data while fetching new results — prevents flicker
     placeholderData: (prev) => prev,
-    staleTime: 1000 * 60 * 5, // 5 minutes client-side
+    staleTime: 0, // Fetch immediately so admin changes reflect instantly
   })
 }
