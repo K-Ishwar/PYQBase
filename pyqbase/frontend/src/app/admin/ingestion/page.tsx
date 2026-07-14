@@ -12,6 +12,8 @@ export default function IngestionUploadPage() {
   const [answerKeyFile, setAnswerKeyFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState("")
+  const [debugInfo, setDebugInfo] = useState<any>(null)
+  const [showDebug, setShowDebug] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -22,6 +24,7 @@ export default function IngestionUploadPage() {
 
     setIsUploading(true)
     setError("")
+    setDebugInfo(null)
 
     const formData = new FormData()
     formData.append("exam", exam)
@@ -33,19 +36,86 @@ export default function IngestionUploadPage() {
     }
 
     try {
+      // Log attempt for debugging
+      console.log("Starting upload to:", `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/admin/ingestion/upload`)
+      console.log("Form data:", {
+        exam,
+        year,
+        paper,
+        paperFile: paperFile.name,
+        answerKeyFile: answerKeyFile?.name
+      })
+
       const response = await apiClient("/api/v1/admin/ingestion/upload", {
         method: "POST",
         body: formData,
       })
 
-      if (!response.ok) throw new Error("Failed to upload")
+      // Capture debug info
+      const debugData = {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url,
+        headers: Object.fromEntries(response.headers.entries()),
+      }
+
+      if (!response.ok) {
+        let errorDetail = "Unknown error"
+        try {
+          const errorData = await response.json()
+          errorDetail = errorData.detail || JSON.stringify(errorData)
+          debugData.responseBody = errorData
+        } catch {
+          errorDetail = await response.text()
+          debugData.responseBody = errorDetail
+        }
+        
+        setDebugInfo(debugData)
+        throw new Error(errorDetail)
+      }
+      
       const data = await response.json()
+      debugData.responseBody = data
+      setDebugInfo(debugData)
+      
+      console.log("Upload successful:", data)
       
       // Redirect to the review page where they can see the progress bar
       router.push(`/admin/ingestion/review/${data.batch_id}`)
-    } catch (err) {
-      setError("An error occurred during upload. Please try again.")
+    } catch (err: any) {
+      let errorMessage = err.message || "Unknown error occurred"
+      
+      // Enhanced error detection
+      if (err.message === "Failed to fetch" || err.name === "TypeError") {
+        errorMessage = "Cannot connect to backend server"
+        setDebugInfo({
+          error: "Network Error",
+          possibleCauses: [
+            "Backend server is not running",
+            "Backend is running on wrong port",
+            "CORS is blocking the request",
+            "Network connectivity issue"
+          ],
+          expectedURL: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/admin/ingestion/upload`,
+          checkList: [
+            "1. Is backend running? Check terminal for 'uvicorn app.main:app --reload'",
+            "2. Is it on port 8000? Check the terminal output",
+            "3. Test manually: Open http://localhost:8000/health in browser",
+            "4. Check CORS settings in backend/app/main.py",
+            "5. Check frontend .env.local: NEXT_PUBLIC_API_URL"
+          ]
+        })
+      }
+      
+      setError(errorMessage)
       setIsUploading(false)
+      setShowDebug(true)
+      
+      // Log to console for debugging
+      console.error("Upload error:", err)
+      console.error("Error name:", err.name)
+      console.error("Error message:", err.message)
+      console.error("Debug info:", debugInfo)
     }
   }
 
@@ -55,7 +125,103 @@ export default function IngestionUploadPage() {
       <p className="text-muted-foreground">Upload a Markdown or PDF question paper to automatically extract, paraphrase, and stage questions for review.</p>
 
       <form onSubmit={handleSubmit} className="space-y-6 bg-card p-6 rounded-xl border shadow-sm">
-        {error && <div className="text-red-500 bg-red-50 p-3 rounded-md">{error}</div>}
+        {error && (
+          <div className="space-y-3">
+            <div className="text-red-600 bg-red-50 p-4 rounded-md border border-red-200">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="font-semibold text-sm mb-1">❌ Upload Failed</p>
+                  <p className="text-sm">{error}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowDebug(!showDebug)}
+                  className="text-xs px-2 py-1 bg-red-100 hover:bg-red-200 rounded border border-red-300 ml-3"
+                >
+                  {showDebug ? "Hide" : "Show"} Debug Info
+                </button>
+              </div>
+            </div>
+            {showDebug && debugInfo && (
+              <div className="bg-gray-900 text-gray-100 p-4 rounded-md text-xs font-mono overflow-auto max-h-96">
+                <div className="mb-2 text-yellow-400 font-bold">🔍 DEBUG INFORMATION</div>
+                <div className="space-y-2">
+                  {debugInfo.error && (
+                    <div className="mb-3 pb-3 border-b border-gray-700">
+                      <div className="text-red-400 font-bold mb-2">⚠️ {debugInfo.error}</div>
+                      {debugInfo.possibleCauses && (
+                        <div className="mb-2">
+                          <div className="text-blue-400">Possible Causes:</div>
+                          <ul className="list-disc list-inside pl-2 text-gray-300">
+                            {debugInfo.possibleCauses.map((cause: string, i: number) => (
+                              <li key={i}>{cause}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {debugInfo.expectedURL && (
+                        <div className="mb-2">
+                          <div className="text-blue-400">Expected URL:</div>
+                          <div className="text-green-400 pl-2">{debugInfo.expectedURL}</div>
+                        </div>
+                      )}
+                      {debugInfo.checkList && (
+                        <div>
+                          <div className="text-blue-400 mb-1">Troubleshooting Steps:</div>
+                          <div className="space-y-1 pl-2 text-gray-300">
+                            {debugInfo.checkList.map((step: string, i: number) => (
+                              <div key={i}>{step}</div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {debugInfo.status && (
+                    <div>
+                      <span className="text-blue-400">Status:</span> {debugInfo.status} {debugInfo.statusText}
+                    </div>
+                  )}
+                  {debugInfo.url && (
+                    <div>
+                      <span className="text-blue-400">URL:</span> {debugInfo.url}
+                    </div>
+                  )}
+                  {debugInfo.responseBody && (
+                    <div>
+                      <span className="text-blue-400">Response:</span>
+                      <pre className="mt-1 pl-2 border-l-2 border-gray-700">
+                        {JSON.stringify(debugInfo.responseBody, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                  {debugInfo.headers && (
+                    <div>
+                      <span className="text-blue-400">Headers:</span>
+                      <pre className="mt-1 pl-2 border-l-2 border-gray-700">
+                        {JSON.stringify(debugInfo.headers, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                  {!debugInfo.error && (
+                    <div className="pt-2 border-t border-gray-700 text-gray-400">
+                      <p className="mb-1">Common Solutions:</p>
+                      <ul className="list-disc list-inside space-y-1 text-xs">
+                        <li>Check if backend server is running</li>
+                        <li>Verify authentication token is valid</li>
+                        <li>Ensure file format is .md, .pdf, or .txt</li>
+                        <li>Check backend logs for detailed error: <code className="bg-gray-800 px-1">python diagnose_ingestion.py</code></li>
+                        <li>Status 401: Not authenticated as admin</li>
+                        <li>Status 400: Invalid input data</li>
+                        <li>Status 500: Server error (check backend logs)</li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-2">

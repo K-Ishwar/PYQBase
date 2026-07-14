@@ -1,6 +1,7 @@
 "use client"
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { apiClient } from "@/lib/api-client"
 
 export default function ReviewBatchPage() {
   const { batch_id } = useParams()
@@ -32,8 +33,8 @@ export default function ReviewBatchPage() {
   const fetchData = async () => {
     try {
       const [batchRes, qsRes] = await Promise.all([
-        fetch(`http://localhost:8000/api/v1/admin/ingestion/batches/${batch_id}`),
-        fetch(`http://localhost:8000/api/v1/admin/ingestion/batches/${batch_id}/staged`)
+        apiClient(`/api/v1/admin/ingestion/batches/${batch_id}`),
+        apiClient(`/api/v1/admin/ingestion/batches/${batch_id}/staged`)
       ])
       if (batchRes.ok) setBatch(await batchRes.json())
       if (qsRes.ok) setQuestions(await qsRes.json())
@@ -46,12 +47,8 @@ export default function ReviewBatchPage() {
 
   const fetchTaxonomy = async () => {
     try {
-      const subRes = await fetch("http://localhost:8000/api/v1/taxonomy/subjects")
+      const subRes = await apiClient("/api/v1/taxonomy/subjects")
       if (subRes.ok) setSubjects(await subRes.json())
-      // For simplicity in UI, we fetch all topics and subtopics for now if we can,
-      // but the API requires subject_id for topics. We will fetch them lazily or just fetch all topics/subtopics if we modify the API.
-      // Wait, let's just make it simpler by relying on the auto-classification.
-      // We will fetch topics/subtopics dynamically when a user clicks, or if the question already has them.
     } catch (err) {
       console.error(err)
     }
@@ -60,7 +57,7 @@ export default function ReviewBatchPage() {
   // Helper to fetch topics when a subject is selected/known
   const loadTopics = async (subjectId: string) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/taxonomy/subjects/${subjectId}/topics`)
+      const res = await apiClient(`/api/v1/taxonomy/subjects/${subjectId}/topics`)
       if (res.ok) {
         const data = await res.json()
         setTopics(prev => {
@@ -75,7 +72,7 @@ export default function ReviewBatchPage() {
   // Helper to fetch subtopics when a topic is selected/known
   const loadSubtopics = async (topicId: string) => {
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/taxonomy/topics/${topicId}/subtopics`)
+      const res = await apiClient(`/api/v1/taxonomy/topics/${topicId}/subtopics`)
       if (res.ok) {
         const data = await res.json()
         setSubtopics(prev => {
@@ -97,9 +94,8 @@ export default function ReviewBatchPage() {
 
   const updateQuestionStatus = async (id: string, updates: any) => {
     try {
-      await fetch(`http://localhost:8000/api/v1/admin/ingestion/staged/${id}`, {
+      await apiClient(`/api/v1/admin/ingestion/staged/${id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates)
       })
       fetchData()
@@ -112,7 +108,7 @@ export default function ReviewBatchPage() {
     setPublishing(true)
     setError("")
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/admin/ingestion/batches/${batch_id}/publish`, {
+      const res = await apiClient(`/api/v1/admin/ingestion/batches/${batch_id}/publish`, {
         method: "POST"
       })
       if (!res.ok) {
@@ -185,6 +181,11 @@ export default function ReviewBatchPage() {
                 <span className="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-800 font-medium capitalize">
                   Status: {q.review_status}
                 </span>
+                {(q.year || q.exam) && (
+                  <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 font-medium">
+                    {q.exam} {q.year}
+                  </span>
+                )}
               </div>
               <div className="space-x-2">
                 <button onClick={() => updateQuestionStatus(q.id, { review_status: "approved" })} className="px-3 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded text-sm font-medium">Approve</button>
@@ -196,7 +197,14 @@ export default function ReviewBatchPage() {
             <div className="grid grid-cols-2 gap-8">
               {/* Left: Raw Extraction */}
               <div className="space-y-4">
-                <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Raw OCR Extraction (Ground Truth)</h4>
+                <div className="flex justify-between items-end">
+                  <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Raw OCR Extraction (Ground Truth)</h4>
+                  {q.header_context && (
+                    <span className="text-[10px] text-slate-400 font-mono truncate max-w-[200px]" title={q.header_context}>
+                      {q.header_context}
+                    </span>
+                  )}
+                </div>
                 <div className="bg-muted/50 p-4 rounded-lg font-mono text-sm whitespace-pre-wrap">
                   {q.raw_question_stem}
                   <div className="mt-4 space-y-1">
@@ -238,7 +246,7 @@ export default function ReviewBatchPage() {
                 {/* Subject/Topic Assignment */}
                 <div className="grid grid-cols-3 gap-2">
                    <select 
-                     className="text-sm p-2 border rounded bg-white" 
+                     className="text-sm p-2 border rounded bg-background text-foreground" 
                      value={q.subject_id || ""}
                      onChange={(e) => {
                        updateQuestionStatus(q.id, { subject_id: e.target.value, topic_id: null, subtopic_id: null })
@@ -250,7 +258,7 @@ export default function ReviewBatchPage() {
                    </select>
 
                    <select 
-                     className="text-sm p-2 border rounded bg-white" 
+                     className="text-sm p-2 border rounded bg-background text-foreground" 
                      value={q.topic_id || ""}
                      disabled={!q.subject_id}
                      onChange={(e) => {
@@ -263,7 +271,7 @@ export default function ReviewBatchPage() {
                    </select>
 
                    <select 
-                     className="text-sm p-2 border rounded bg-white"
+                     className="text-sm p-2 border rounded bg-background text-foreground"
                      value={q.subtopic_id || ""}
                      disabled={!q.topic_id}
                      onChange={(e) => updateQuestionStatus(q.id, { subtopic_id: e.target.value })}

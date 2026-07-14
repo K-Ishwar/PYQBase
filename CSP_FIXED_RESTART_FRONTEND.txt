@@ -1,0 +1,130 @@
+╔══════════════════════════════════════════════════════════════╗
+║        ✅ CSP ISSUE FIXED - RESTART FRONTEND NOW!            ║
+╚══════════════════════════════════════════════════════════════╝
+
+THE PROBLEM WAS:
+----------------
+Content Security Policy (CSP) was blocking HTTP connections
+to your local backend (http://127.0.0.1:8000)
+
+Browser error showed:
+  "Refused to connect because it violates the document's
+   Content Security Policy"
+
+
+THE FIX:
+--------
+✅ Updated next.config.mjs to allow HTTP connections in development
+✅ Added http://127.0.0.1:8000 to CSP connect-src
+✅ Added http://localhost:8000 to CSP connect-src
+
+
+╔══════════════════════════════════════════════════════════════╗
+║              RESTART FRONTEND NOW (REQUIRED!)                ║
+╚══════════════════════════════════════════════════════════════╝
+
+THE CONFIG FILE CHANGED, YOU MUST RESTART!
+
+Step 1: STOP Frontend
+---------------------
+In frontend terminal:
+  Press Ctrl+C
+  Press Ctrl+C again to make sure it's stopped
+
+Step 2: RESTART Frontend
+------------------------
+cd c:\Hackthons\PYQBase\pyqbase\frontend
+npm run dev
+
+Step 3: WAIT for it to compile
+-------------------------------
+Wait for:
+  ✓ Compiled in X.Xs
+  ○ Local: http://localhost:3000
+
+Step 4: HARD RELOAD Browser
+---------------------------
+  Press Ctrl+Shift+R (or Ctrl+F5)
+  This clears browser cache
+
+Step 5: TRY UPLOAD
+------------------
+Go to: http://localhost:3000/admin/ingestion
+Upload a file!
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                  OR USE BATCH FILE                           ║
+╚══════════════════════════════════════════════════════════════╝
+
+Just double-click: RESTART_EVERYTHING_CLEAN.bat
+
+This will restart both servers with the new config!
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                VERIFY IN CONSOLE (F12)                       ║
+╚══════════════════════════════════════════════════════════════╝
+
+After restarting, press F12 and try upload.
+
+You should NO LONGER see:
+  ❌ "violates the Content Security Policy"
+
+You should see:
+  ✅ "Starting upload to: http://127.0.0.1:8000..."
+  ✅ "API Request: {..."
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                   WHAT CHANGED                               ║
+╚══════════════════════════════════════════════════════════════╝
+
+File: frontend/next.config.mjs
+
+Before:
+  connect-src 'self' https://*.supabase.co ... (no HTTP)
+
+After (in development):
+  connect-src 'self' http://127.0.0.1:8000 http://localhost:8000
+              https://*.supabase.co ...
+
+This allows your frontend to connect to local HTTP backend!
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                     DO THIS NOW                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+1. Stop frontend (Ctrl+C in terminal)
+
+2. Restart frontend:
+   cd c:\Hackthons\PYQBase\pyqbase\frontend
+   npm run dev
+
+3. Hard reload browser:
+   Ctrl+Shift+R
+
+4. Try upload:
+   http://localhost:3000/admin/ingestion
+
+SHOULD WORK NOW! 🚀
+
+
+╔══════════════════════════════════════════════════════════════╗
+║              IF STILL SHOWING CSP ERROR                      ║
+╚══════════════════════════════════════════════════════════════╝
+
+1. Make SURE frontend restarted (not still running old process)
+
+2. Clear browser cache completely:
+   Ctrl+Shift+Delete → Clear everything
+
+3. Close ALL browser tabs of localhost:3000
+
+4. Open fresh tab: http://localhost:3000/admin/ingestion
+
+5. Check console - CSP error should be GONE
+
+
+The upload should work now! The CSP was blocking the connection! 🎉

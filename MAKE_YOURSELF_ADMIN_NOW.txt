@@ -1,0 +1,148 @@
+╔══════════════════════════════════════════════════════════════╗
+║     ✅ CONNECTION WORKS! BUT YOU'RE NOT ADMIN                ║
+║            MAKE YOURSELF ADMIN NOW                           ║
+╚══════════════════════════════════════════════════════════════╝
+
+GOOD NEWS:
+----------
+✅ Backend is running
+✅ Frontend is connected
+✅ CSP is fixed
+✅ You can log in
+
+BAD NEWS:
+---------
+❌ Your user is not an admin
+❌ Admin pages redirect you to login
+❌ Upload page requires admin access
+
+
+╔══════════════════════════════════════════════════════════════╗
+║              FIX IT NOW (2 minutes)                          ║
+╚══════════════════════════════════════════════════════════════╝
+
+STEP 1: Run Admin Script
+-------------------------
+Open Command Prompt or PowerShell:
+
+cd c:\Hackthons\PYQBase\pyqbase\backend
+.venv\Scripts\activate
+python make_user_admin.py
+
+STEP 2: Enter Your Email
+-------------------------
+When prompted, enter the EXACT email you use to login
+
+Example:
+  Enter user email to make admin: youremail@example.com
+
+STEP 3: Verify Success
+----------------------
+You should see:
+  ✅ User is now an ADMIN!
+
+STEP 4: Log Out and Log In
+---------------------------
+1. Go to your app
+2. Log out completely
+3. Log in again with same credentials
+
+STEP 5: Access Admin
+--------------------
+Go to: http://localhost:3000/admin/ingestion
+Should work now!
+
+
+╔══════════════════════════════════════════════════════════════╗
+║              ALTERNATIVE - Use Supabase                      ║
+╚══════════════════════════════════════════════════════════════╝
+
+If script doesn't work:
+
+1. Go to: https://supabase.com
+
+2. Select your project
+
+3. Go to: SQL Editor
+
+4. Run this query:
+   
+   UPDATE users 
+   SET role = 'admin' 
+   WHERE email = 'your_login_email@example.com';
+
+5. Verify:
+
+   SELECT email, role FROM users;
+
+6. Log out and log in to your app
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                  WHAT HAPPENED                               ║
+╚══════════════════════════════════════════════════════════════╝
+
+When you created your account, it was created with role='user'
+
+Admin routes check:
+  if (!isAdmin) redirect('/login')
+
+This creates a loop:
+  Login → / → Redirect to /login → Login → ...
+
+Solution:
+  Change your role to 'admin' in database
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                  AFTER FIXING                                ║
+╚══════════════════════════════════════════════════════════════╝
+
+You'll be able to:
+  ✅ Access /admin/ingestion
+  ✅ Upload question papers
+  ✅ Review staged questions
+  ✅ Manage taxonomy
+  ✅ All admin functions
+
+
+╔══════════════════════════════════════════════════════════════╗
+║              DO THIS RIGHT NOW                               ║
+╚══════════════════════════════════════════════════════════════╝
+
+1. Open terminal:
+   cd c:\Hackthons\PYQBase\pyqbase\backend
+   .venv\Scripts\activate
+   python make_user_admin.py
+
+2. Enter your email
+
+3. Log out from app
+
+4. Log in again
+
+5. Go to: http://localhost:3000/admin/ingestion
+
+6. Upload a file!
+
+THAT'S IT! You're done! 🎉
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                  TROUBLESHOOTING                             ║
+╚══════════════════════════════════════════════════════════════╝
+
+Q: Script says "User not found"
+A: The email doesn't match. Check what email you used to sign up.
+   The script will show available users.
+
+Q: Still redirecting after making admin
+A: Make sure to log out completely and log in again.
+   Clear browser storage: F12 → Application → Clear storage
+
+Q: How do I know if I'm admin?
+A: After login, try accessing /admin/ingestion
+   If you see the upload form, you're admin!
+
+Q: Can I have multiple admins?
+A: Yes! Run the script for each email you want to make admin.

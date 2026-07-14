@@ -121,8 +121,12 @@ async def _process_refresh_batch(db: AsyncSession) -> None:
     try:
         # Commit any pending transaction before doing autocommit operations
         await db.commit()
-        await db.execute(
-            text("REFRESH MATERIALIZED VIEW CONCURRENTLY topic_heatmap").execution_options(isolation_level="AUTOCOMMIT")
+        
+        # Execute REFRESH MATERIALIZED VIEW with connection-level isolation
+        conn = await db.connection()
+        await conn.execute(
+            text("REFRESH MATERIALIZED VIEW CONCURRENTLY topic_heatmap"),
+            execution_options={"isolation_level": "AUTOCOMMIT"}
         )
     except Exception as e:
         logger.error(f"Error during refresh: {e}")

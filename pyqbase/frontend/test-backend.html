@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Backend Connection Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+        h1 { color: #0f0; }
+        .test { 
+            margin: 20px 0; 
+            padding: 15px; 
+            background: #000; 
+            border: 1px solid #0f0;
+            border-radius: 5px;
+        }
+        .pass { color: #0f0; }
+        .fail { color: #f00; }
+        .pending { color: #ff0; }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        button:hover { background: #0f0; opacity: 0.8; }
+        pre {
+            background: #111;
+            padding: 10px;
+            overflow-x: auto;
+            border-left: 3px solid #0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Backend Connection Test</h1>
+    <p>This tests if frontend can reach backend</p>
+
+    <div class="test">
+        <div id="test1" class="pending">⏳ Test 1: Basic Health Check</div>
+        <pre id="test1-details"></pre>
+    </div>
+
+    <div class="test">
+        <div id="test2" class="pending">⏳ Test 2: Ingestion Health Check</div>
+        <pre id="test2-details"></pre>
+    </div>
+
+    <div class="test">
+        <div id="test3" class="pending">⏳ Test 3: CORS Test</div>
+        <pre id="test3-details"></pre>
+    </div>
+
+    <button onclick="runTests()">▶ Run Tests</button>
+    <button onclick="location.reload()">🔄 Refresh</button>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+
+        async function test1() {
+            const el = document.getElementById('test1');
+            const details = document.getElementById('test1-details');
+            
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                
+                if (response.ok && data.status === 'ok') {
+                    el.innerHTML = '✅ Test 1: PASSED - Backend is running';
+                    el.className = 'pass';
+                    details.textContent = JSON.stringify(data, null, 2);
+                    return true;
+                } else {
+                    el.innerHTML = '❌ Test 1: FAILED - Unexpected response';
+                    el.className = 'fail';
+                    details.textContent = `Status: ${response.status}\n${JSON.stringify(data, null, 2)}`;
+                    return false;
+                }
+            } catch (err) {
+                el.innerHTML = '❌ Test 1: FAILED - Cannot connect to backend';
+                el.className = 'fail';
+                details.textContent = `Error: ${err.message}\n\nBackend is likely not running!\nRun: uvicorn app.main:app --reload`;
+                return false;
+            }
+        }
+
+        async function test2() {
+            const el = document.getElementById('test2');
+            const details = document.getElementById('test2-details');
+            
+            try {
+                const response = await fetch(`${API_URL}/api/v1/admin/ingestion/health`);
+                const data = await response.json();
+                
+                if (response.ok && data.status === 'healthy') {
+                    el.innerHTML = '✅ Test 2: PASSED - Ingestion service healthy';
+                    el.className = 'pass';
+                    details.textContent = JSON.stringify(data, null, 2);
+                    return true;
+                } else if (response.ok && data.status === 'degraded') {
+                    el.innerHTML = '⚠️ Test 2: WARNING - Ingestion service degraded';
+                    el.className = 'fail';
+                    details.textContent = `Issues:\n${data.issues.join('\n')}\n\n${JSON.stringify(data, null, 2)}`;
+                    return false;
+                } else {
+                    el.innerHTML = '❌ Test 2: FAILED - Ingestion service error';
+                    el.className = 'fail';
+                    details.textContent = `Status: ${response.status}\n${JSON.stringify(data, null, 2)}`;
+                    return false;
+                }
+            } catch (err) {
+                el.innerHTML = '❌ Test 2: FAILED - Cannot reach ingestion endpoint';
+                el.className = 'fail';
+                details.textContent = `Error: ${err.message}`;
+                return false;
+            }
+        }
+
+        async function test3() {
+            const el = document.getElementById('test3');
+            const details = document.getElementById('test3-details');
+            
+            try {
+                const response = await fetch(`${API_URL}/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const corsHeaders = {
+                    'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
+                    'access-control-allow-credentials': response.headers.get('access-control-allow-credentials'),
+                    'access-control-allow-methods': response.headers.get('access-control-allow-methods'),
+                };
+                
+                if (corsHeaders['access-control-allow-origin']) {
+                    el.innerHTML = '✅ Test 3: PASSED - CORS configured';
+                    el.className = 'pass';
+                    details.textContent = JSON.stringify(corsHeaders, null, 2);
+                    return true;
+                } else {
+                    el.innerHTML = '⚠️ Test 3: WARNING - CORS headers not found';
+                    el.className = 'fail';
+                    details.textContent = 'CORS might not be configured properly.\nUpdate backend/.env: CORS_ORIGINS="http://localhost:3000"';
+                    return false;
+                }
+            } catch (err) {
+                el.innerHTML = '❌ Test 3: FAILED - CORS test error';
+                el.className = 'fail';
+                details.textContent = `Error: ${err.message}`;
+                return false;
+            }
+        }
+
+        async function runTests() {
+            console.log('Running backend connection tests...');
+            
+            const t1 = await test1();
+            
+            if (t1) {
+                await test2();
+                await test3();
+            } else {
+                document.getElementById('test2').innerHTML = '⏭️ Test 2: SKIPPED (backend not running)';
+                document.getElementById('test3').innerHTML = '⏭️ Test 3: SKIPPED (backend not running)';
+            }
+        }
+
+        // Auto-run on load
+        window.onload = () => {
+            runTests();
+        };
+    </script>
+</body>
+</html>

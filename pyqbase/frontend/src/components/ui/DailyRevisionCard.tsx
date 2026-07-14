@@ -7,7 +7,7 @@ import { useAuth } from '@/components/providers/auth-provider'
 
 export function DailyRevisionCard() {
   const { user } = useAuth()
-  const { data, isLoading } = useSrsQueue()
+  const { data, isLoading } = useSrsQueue(!!user)
 
   if (!user) return null // Hide if not logged in
 

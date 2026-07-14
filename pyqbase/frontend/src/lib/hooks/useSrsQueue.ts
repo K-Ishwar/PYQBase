@@ -19,7 +19,7 @@ export interface SrsQueueResponse {
   }
 }
 
-export function useSrsQueue() {
+export function useSrsQueue(enabled = true) {
   return useQuery<SrsQueueResponse>({
     queryKey: ['srs-queue'],
     queryFn: async () => {
@@ -29,5 +29,8 @@ export function useSrsQueue() {
       }
       return res.json()
     },
+    // Only fetch when the user is authenticated to avoid unauthenticated 401s
+    enabled,
   })
 }
+

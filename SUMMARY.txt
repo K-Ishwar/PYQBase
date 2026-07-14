@@ -1,0 +1,126 @@
+========================================
+DIAGNOSIS COMPLETE - LOGIN LOOP ISSUE
+========================================
+
+ROOT CAUSE:
+  Your SUPABASE_SERVICE_KEY in .env is a PUBLISHABLE key, NOT a service role key!
+
+CURRENT KEY (WRONG):
+  sb_publishable_UMS2EzfRZvlZrtZrMMO1OQ_udcOFeSn
+  ^^^ This is a PUBLIC/ANON key - CANNOT update user metadata
+
+NEEDED KEY:
+  Service role key (starts with 'eyJ', very long JWT token)
+
+========================================
+SOLUTION - DO THESE STEPS:
+========================================
+
+STEP 1: GET SERVICE ROLE KEY
+   Go to: https://supabase.com/dashboard/project/mhratdnwizzdxktfkfqi/settings/api
+   Find section: "Project API keys"
+   Copy the 'service_role' key (click "Reveal" first)
+
+STEP 2: UPDATE .env FILE
+   File: c:\Hackthons\PYQBase\pyqbase\backend\.env
+   
+   Replace this line:
+   SUPABASE_SERVICE_KEY="sb_publishable_UMS2EzfRZvlZrtZrMMO1OQ_udcOFeSn"
+   
+   With:
+   SUPABASE_SERVICE_KEY="eyJhbGciOi...YOUR_ACTUAL_SERVICE_KEY"
+   
+   Save the file
+
+STEP 3: CHECK YOUR JWT TOKEN
+   Open in browser: http://localhost:3000/check-jwt.html
+   
+   If it says "Admin Role Missing", continue to STEP 4
+   If it says "Admin Role Found", skip to STEP 5
+
+STEP 4: FIX USER METADATA
+   Run in terminal:
+   
+   cd c:\Hackthons\PYQBase\pyqbase\backend
+   python diagnose_admin.py
+   
+   Enter your email when prompted
+   Type 'y' when asked to update metadata
+
+STEP 5: CLEAR BROWSER STORAGE
+   Go to: http://localhost:3000/check-jwt.html
+   Click: "Clear Storage & Logout" button
+   
+   OR manually:
+   Press F12 → Application tab → "Clear site data"
+
+STEP 6: LOGIN AGAIN
+   Go to: http://localhost:3000/login
+   Enter credentials
+   Log in
+   
+   Your NEW JWT token will now include role='admin'!
+
+STEP 7: TEST
+   Go to: http://localhost:3000/admin/ingestion
+   Should work without redirect!
+
+========================================
+FILES CREATED TO HELP YOU:
+========================================
+
+  DO_THIS_NOW.md
+    Quick start guide with all steps
+
+  FIX_ADMIN_LOGIN_LOOP.md
+    Complete troubleshooting documentation
+
+  backend/diagnose_admin.py
+    Python script to fix user metadata
+
+  frontend/public/check-jwt.html
+    Browser tool to check your JWT token
+    URL: http://localhost:3000/check-jwt.html
+
+========================================
+WHY THIS IS HAPPENING:
+========================================
+
+1. Admin layout checks: user.app_metadata?.role === 'admin'
+2. This checks the JWT TOKEN, not the database
+3. JWT tokens are issued by Supabase when you log in
+4. By default, app_metadata is empty (no role)
+5. To add role='admin' to app_metadata, you need SERVICE ROLE key
+6. You're using a PUBLIC key which doesn't have permission
+7. Once you use correct key to update metadata
+8. And clear browser cache to get a NEW JWT token
+9. The new JWT will include role='admin'
+10. Admin layout will allow access
+
+========================================
+QUICK TEST COMMANDS:
+========================================
+
+Check backend is running:
+  http://127.0.0.1:8000/health
+  Should show: {"status":"ok"}
+
+Check JWT token:
+  http://localhost:3000/check-jwt.html
+  Should show: Admin Role Found
+
+Run diagnostic:
+  cd c:\Hackthons\PYQBase\pyqbase\backend
+  python diagnose_admin.py
+
+========================================
+KEY POINT:
+========================================
+
+The "sb_publishable_" key is like a PUBLIC key - anyone can use it.
+The SERVICE ROLE key is like an ADMIN key - full database access.
+
+You NEED the admin key to update user metadata.
+Get it from Supabase dashboard!
+
+========================================

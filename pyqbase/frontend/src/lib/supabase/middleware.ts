@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
-  const supabaseResponse = NextResponse.next({ request })
+  let supabaseResponse = NextResponse.next({ request })
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -24,17 +24,23 @@ export async function updateSession(request: NextRequest) {
         return request.cookies.getAll()
       },
       setAll(cookiesToSet) {
+        // First, write cookies onto the request so subsequent server-side
+        // reads in this same request see the updated values.
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-        const res = NextResponse.next({ request })
+
+        // Re-create the response so it carries the updated request cookies,
+        // then also stamp the Set-Cookie headers so the browser persists them.
+        supabaseResponse = NextResponse.next({ request })
         cookiesToSet.forEach(({ name, value, options }) =>
-          res.cookies.set(name, value, options)
+          supabaseResponse.cookies.set(name, value, options)
         )
-        return
       },
     },
   })
 
-  // Refresh the auth token
+  // IMPORTANT: Do not add any logic between createServerClient and
+  // supabase.auth.getUser(). A subtle bug in Next.js can cause session
+  // tokens to be invalidated if auth checks are mixed in between.
   await supabase.auth.getUser()
 
   return supabaseResponse

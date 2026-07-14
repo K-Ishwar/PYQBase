@@ -1,0 +1,156 @@
+╔══════════════════════════════════════════════════════════════╗
+║           BACKEND IS RUNNING BUT CAN'T CONNECT?              ║
+║               DO THIS TO FIX IT                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+YOUR BACKEND IS WORKING! ✅
+-------------------------
+Your terminal shows:
+  INFO: 127.0.0.1:56472 - "GET /health HTTP/1.1" 200 OK
+
+This means backend is running and responding!
+
+THE PROBLEM:
+-----------
+Frontend hasn't restarted with new configuration OR
+Browser has cached the old configuration
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                    SOLUTION 1 (EASIEST)                      ║
+║                  CLEAN RESTART EVERYTHING                    ║
+╚══════════════════════════════════════════════════════════════╝
+
+1. Double-click: RESTART_EVERYTHING_CLEAN.bat
+
+This will:
+✅ Stop all running processes
+✅ Clear frontend cache
+✅ Start backend in new window
+✅ Start frontend in new window
+
+Wait 10 seconds, then:
+- Open http://127.0.0.1:8000/health → Should see {"status":"ok"}
+- Open http://localhost:3000/admin/ingestion
+- Press Ctrl+Shift+R to hard reload
+- Try upload!
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                 SOLUTION 2 (MANUAL)                          ║
+║               IF SOLUTION 1 DOESN'T WORK                     ║
+╚══════════════════════════════════════════════════════════════╝
+
+Step 1: STOP FRONTEND
+---------------------
+In frontend terminal:
+  Press Ctrl+C
+  Press Ctrl+C again
+
+Step 2: CLEAR BROWSER CACHE
+---------------------------
+  Press Ctrl+Shift+Delete
+  Select "Cached images and files"
+  Click Clear
+
+Step 3: DELETE FRONTEND CACHE
+-----------------------------
+cd c:\Hackthons\PYQBase\pyqbase\frontend
+rmdir /s /q .next
+
+Step 4: RESTART FRONTEND
+------------------------
+cd c:\Hackthons\PYQBase\pyqbase\frontend
+npm run dev
+
+Step 5: HARD RELOAD BROWSER
+---------------------------
+Open: http://localhost:3000/admin/ingestion
+Press: Ctrl+Shift+R (hard reload)
+
+Step 6: CHECK CONSOLE
+---------------------
+Press F12
+Go to Console tab
+Look for:
+  "API Request: { ... url: 'http://127.0.0.1:8000...' ... }"
+
+If you see localhost:8000 instead of 127.0.0.1:8000, go back to Step 3
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                 DEBUG - CHECK THIS                           ║
+╚══════════════════════════════════════════════════════════════╝
+
+Open Browser Console (F12) and type:
+
+// Should show 127.0.0.1:8000
+console.log(process.env.NEXT_PUBLIC_API_URL)
+
+// Test connection
+fetch('http://127.0.0.1:8000/health')
+  .then(r => r.json())
+  .then(d => console.log('SUCCESS:', d))
+  .catch(e => console.log('ERROR:', e))
+
+If fetch shows SUCCESS → Backend connection works!
+If fetch shows ERROR → CORS issue or backend not running
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                    WHY THIS HAPPENS                          ║
+╚══════════════════════════════════════════════════════════════╝
+
+1. Frontend was compiled with old config (localhost:8000)
+2. Browser cached old files
+3. Next.js cached old build
+
+Solution: Clear all caches and restart fresh
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                    QUICK TEST                                ║
+╚══════════════════════════════════════════════════════════════╝
+
+Test Backend Directly:
+---------------------
+Open: http://127.0.0.1:8000/health
+Should see: {"status":"ok"}
+
+If this works but upload doesn't, it's frontend config issue.
+
+
+Test Page (Better Test):
+------------------------
+Open: http://localhost:3000/upload-test.html
+
+Run Test 3
+If shows "✅ CONNECTION WORKS" → Backend is fine, issue is auth
+If shows "❌ CANNOT CONNECT" → Need to fix CORS or frontend config
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                    BOTTOM LINE                               ║
+╚══════════════════════════════════════════════════════════════╝
+
+Your backend IS running (you see health checks in logs)
+The problem is frontend can't reach it because:
+  - Frontend hasn't reloaded with new config
+  - Browser has cached old version
+
+FIX: Use RESTART_EVERYTHING_CLEAN.bat
+     Or manually clear caches and restart frontend
+
+After restart, hard reload browser (Ctrl+Shift+R)
+
+THEN TRY UPLOAD! 🚀
+
+
+╔══════════════════════════════════════════════════════════════╗
+║              HEATMAP WORKER ERROR (BONUS FIX)                ║
+╚══════════════════════════════════════════════════════════════╝
+
+I also fixed the heatmap worker error you see in logs.
+It won't affect uploads, but backend needs restart to apply fix.
+
+After using RESTART_EVERYTHING_CLEAN.bat, that error will be gone too!

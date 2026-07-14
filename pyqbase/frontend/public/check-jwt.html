@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Token Checker - PYQBase</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #64748b;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin: 25px 0;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+        .success {
+            border-left-color: #10b981;
+            background: #f0fdf4;
+        }
+        .error {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+        .warning {
+            border-left-color: #f59e0b;
+            background: #fffbeb;
+        }
+        .label {
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+        .value {
+            font-family: 'Monaco', 'Courier New', monospace;
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            margin-right: 10px;
+        }
+        .button:hover {
+            background: #2563eb;
+        }
+        .button.danger {
+            background: #ef4444;
+        }
+        .button.danger:hover {
+            background: #dc2626;
+        }
+        .icon {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+        .title-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        ol, ul {
+            margin: 12px 0;
+            padding-left: 24px;
+        }
+        li {
+            margin: 8px 0;
+            color: #475569;
+        }
+        code {
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 JWT Token Checker</h1>
+        <p class="subtitle">Check if your Supabase JWT token contains the admin role</p>
+
+        <div id="output"></div>
+
+        <div style="margin-top: 30px;">
+            <button class="button" onclick="checkToken()">🔄 Check Again</button>
+            <button class="button danger" onclick="clearAndLogout()">🗑️ Clear Storage & Logout</button>
+        </div>
+
+        <div class="section">
+            <div class="label">ℹ️ What This Tool Does:</div>
+            <ul>
+                <li>Reads your Supabase authentication token from browser storage</li>
+                <li>Decodes the JWT to show the <code>app_metadata</code> section</li>
+                <li>Checks if <code>role: 'admin'</code> is present</li>
+                <li>Tells you if you need to update your metadata or just clear browser cache</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function checkToken() {
+            const output = document.getElementById('output');
+            output.innerHTML = '';
+
+            // Get all localStorage keys related to Supabase
+            let foundToken = false;
+            let tokenData = null;
+            let accessToken = null;
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.includes('supabase.auth.token')) {
+                    try {
+                        const data = JSON.parse(localStorage.getItem(key));
+                        if (data && data.access_token) {
+                            accessToken = data.access_token;
+                            tokenData = parseJwt(accessToken);
+                            foundToken = true;
+                            break;
+                        }
+                    } catch (e) {
+                        // Skip invalid JSON
+                    }
+                }
+            }
+
+            if (!foundToken || !tokenData) {
+                output.innerHTML = `
+                    <div class="section error">
+                        <div class="title-row">
+                            <span class="icon">❌</span>
+                            <h3 style="margin: 0;">No JWT Token Found</h3>
+                        </div>
+                        <p>You are not logged in, or the token is missing from localStorage.</p>
+                        <p><strong>Next Step:</strong> Go to <a href="http://localhost:3000/login">http://localhost:3000/login</a> and log in.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Check if admin role is present
+            const appMetadata = tokenData.app_metadata || {};
+            const role = appMetadata.role;
+            const isAdmin = role === 'admin';
+
+            // Display token info
+            let html = `
+                <div class="section ${isAdmin ? 'success' : 'error'}">
+                    <div class="title-row">
+                        <span class="icon">${isAdmin ? '✅' : '❌'}</span>
+                        <h3 style="margin: 0;">${isAdmin ? 'Admin Role Found!' : 'Admin Role Missing'}</h3>
+                    </div>
+                    ${isAdmin 
+                        ? '<p>Your JWT token contains <code>role: "admin"</code> in app_metadata.</p>'
+                        : '<p>Your JWT token DOES NOT contain <code>role: "admin"</code> in app_metadata.</p>'
+                    }
+                </div>
+
+                <div class="section">
+                    <div class="label">📧 User Email:</div>
+                    <div class="value">${tokenData.email || '(not found)'}</div>
+                </div>
+
+                <div class="section">
+                    <div class="label">🔑 User ID:</div>
+                    <div class="value">${tokenData.sub || '(not found)'}</div>
+                </div>
+
+                <div class="section">
+                    <div class="label">🏷️ app_metadata (JWT Claims):</div>
+                    <div class="value">${JSON.stringify(appMetadata, null, 2)}</div>
+                </div>
+
+                <div class="section">
+                    <div class="label">⏱️ Token Issued:</div>
+                    <div class="value">${tokenData.iat ? new Date(tokenData.iat * 1000).toLocaleString() : '(not found)'}</div>
+                </div>
+
+                <div class="section">
+                    <div class="label">⏰ Token Expires:</div>
+                    <div class="value">${tokenData.exp ? new Date(tokenData.exp * 1000).toLocaleString() : '(not found)'}</div>
+                </div>
+            `;
+
+            if (!isAdmin) {
+                html += `
+                    <div class="section warning">
+                        <div class="title-row">
+                            <span class="icon">🔧</span>
+                            <h3 style="margin: 0;">How to Fix This</h3>
+                        </div>
+                        <ol>
+                            <li>Run the diagnostic script in backend:
+                                <div class="value">cd c:\\Hackthons\\PYQBase\\pyqbase\\backend
+python diagnose_admin.py</div>
+                            </li>
+                            <li>Enter your email: <code>${tokenData.email}</code></li>
+                            <li>The script will update your Supabase user metadata to include <code>role: 'admin'</code></li>
+                            <li>Come back here and click "Clear Storage & Logout" below</li>
+                            <li>Log in again to get a NEW JWT token with admin role</li>
+                        </ol>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="section warning">
+                        <div class="title-row">
+                            <span class="icon">⚠️</span>
+                            <h3 style="margin: 0;">Still Getting Redirected?</h3>
+                        </div>
+                        <p>If you're still being redirected to login despite having admin role:</p>
+                        <ol>
+                            <li>Click "Clear Storage & Logout" below</li>
+                            <li>Close ALL browser tabs for localhost:3000</li>
+                            <li>Open a new tab and go to <a href="http://localhost:3000/login">http://localhost:3000/login</a></li>
+                            <li>Log in again</li>
+                            <li>Try accessing <a href="http://localhost:3000/admin/ingestion">http://localhost:3000/admin/ingestion</a></li>
+                        </ol>
+                        <p><strong>Why?</strong> The frontend might be using an old cached JWT. Clearing storage forces a fresh authentication.</p>
+                    </div>
+                `;
+            }
+
+            output.innerHTML = html;
+        }
+
+        function clearAndLogout() {
+            if (confirm('This will clear all site data and log you out. Continue?')) {
+                // Clear localStorage
+                localStorage.clear();
+                
+                // Clear sessionStorage
+                sessionStorage.clear();
+                
+                // Clear cookies
+                document.cookie.split(";").forEach(function(c) {
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                });
+                
+                alert('✅ Storage cleared! Redirecting to login...');
+                window.location.href = 'http://localhost:3000/login';
+            }
+        }
+
+        // Run check on page load
+        checkToken();
+    </script>
+</body>
+</html>

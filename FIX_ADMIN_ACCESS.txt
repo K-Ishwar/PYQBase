@@ -1,0 +1,167 @@
+╔══════════════════════════════════════════════════════════════╗
+║          AUTHENTICATION ISSUE - USER NOT ADMIN               ║
+╚══════════════════════════════════════════════════════════════╝
+
+THE PROBLEM:
+------------
+✅ You can log in successfully
+✅ Connection to backend works now
+❌ Your user account doesn't have "admin" role
+❌ Admin layout redirects you back to login
+
+The redirect loop happens because:
+1. You login → redirected to "/"
+2. "/" redirects to "/login" because user is not admin
+3. Loop!
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                    SOLUTION                                  ║
+║              MAKE YOUR USER AN ADMIN                         ║
+╚══════════════════════════════════════════════════════════════╝
+
+OPTION 1 - Use Python Script:
+------------------------------
+
+1. Open terminal in backend folder:
+   cd c:\Hackthons\PYQBase\pyqbase\backend
+
+2. Activate venv:
+   .venv\Scripts\activate
+
+3. Run script:
+   python make_user_admin.py
+
+4. Enter your email when prompted
+
+5. Log out and log in again
+
+
+OPTION 2 - Use Database Directly:
+----------------------------------
+
+If you have Supabase SQL Editor or database access:
+
+UPDATE users 
+SET role = 'admin' 
+WHERE email = 'your@email.com';
+
+
+OPTION 3 - Check via SQL:
+--------------------------
+
+First, see what email you're using:
+
+SELECT id, email, role FROM users;
+
+Then update the one you use to login:
+
+UPDATE users 
+SET role = 'admin' 
+WHERE email = 'the_email_you_login_with@example.com';
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                    AFTER MAKING ADMIN                        ║
+╚══════════════════════════════════════════════════════════════╝
+
+1. Log out:
+   Go to your app and log out completely
+
+2. Clear browser storage:
+   F12 → Application → Clear Storage → Clear all
+
+3. Log in again:
+   http://localhost:3000/login
+
+4. You should now be able to:
+   - Access /admin/* routes
+   - Upload content at /admin/ingestion
+
+
+╔══════════════════════════════════════════════════════════════╗
+║             WHY THIS IS HAPPENING                            ║
+╚══════════════════════════════════════════════════════════════╝
+
+The admin layout checks if user has admin role:
+
+File: frontend/src/app/admin/layout.tsx
+
+  const isAdmin = user.app_metadata?.role === 'admin'
+  if (!isAdmin) redirect('/login')
+
+Your user was created but role wasn't set to 'admin'.
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                    QUICK CHECK                               ║
+╚══════════════════════════════════════════════════════════════╝
+
+To verify your user role:
+
+1. Log in to Supabase Dashboard
+
+2. Go to: Database → Table Editor → users
+
+3. Find your email
+
+4. Check the "role" column:
+   - If "user" → Need to change to "admin"
+   - If "admin" → Should work (try logout/login)
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                FRONTEND FIX APPLIED                          ║
+╚══════════════════════════════════════════════════════════════╝
+
+I also fixed the login page to use correct API URL:
+
+Before:
+  await fetch('http://localhost:8000/api/v1/auth/sync-user', ...)
+
+After:
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+  await fetch(`${apiUrl}/api/v1/auth/sync-user`, ...)
+
+Restart frontend for this to take effect:
+  cd c:\Hackthons\PYQBase\pyqbase\frontend
+  npm run dev
+
+
+╔══════════════════════════════════════════════════════════════╗
+║                    DO THIS NOW                               ║
+╚══════════════════════════════════════════════════════════════╝
+
+1. Run the admin script:
+   cd c:\Hackthons\PYQBase\pyqbase\backend
+   .venv\Scripts\activate
+   python make_user_admin.py
+
+2. Enter your login email
+
+3. Log out from the app
+
+4. Log in again
+
+5. Try accessing /admin/ingestion
+
+Should work now! 🚀
+
+
+╔══════════════════════════════════════════════════════════════╗
+║           IF SCRIPT FAILS (Connection Error)                 ║
+╚══════════════════════════════════════════════════════════════╝
+
+Use Supabase SQL Editor directly:
+
+1. Go to: https://supabase.com → Your Project → SQL Editor
+
+2. Run:
+   UPDATE users 
+   SET role = 'admin' 
+   WHERE email = 'your_login_email@example.com';
+
+3. Check it worked:
+   SELECT email, role FROM users;
+
+4. Log out and log in again in your app

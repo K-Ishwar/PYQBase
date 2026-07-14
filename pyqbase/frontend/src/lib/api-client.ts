@@ -11,51 +11,80 @@ function generateDeviceFingerprint(): string {
   return fp;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
 
 export async function apiClient(endpoint: string, options: RequestInit = {}) {
-  const supabase = createClient();
-  const headers = new Headers(options.headers);
+  try {
+    const supabase = createClient();
+    const headers = new Headers(options.headers);
 
-  const { data: { session } } = await supabase.auth.getSession();
-
-  if (session?.access_token) {
-    headers.set('Authorization', `Bearer ${session.access_token}`);
-  } else {
-    headers.set('X-Device-Fingerprint', generateDeviceFingerprint());
-  }
-
-  // Ensure JSON requests set content type
-  if (options.body && typeof options.body === 'string' && !headers.has('Content-Type')) {
-    headers.set('Content-Type', 'application/json');
-  }
-
-  const url = `${API_BASE_URL}${endpoint}`;
-  
-  let response = await fetch(url, { ...options, headers });
-
-  if (response.status === 401) {
-    // Try refreshing the session silently
-    const { data: refreshData, error } = await supabase.auth.refreshSession();
-    
-    if (error || !refreshData.session) {
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
-      throw new Error('Session expired. Please log in again.');
+    // Try to get session - catch if Supabase fails
+    let session = null;
+    try {
+      const { data: { session: s } } = await supabase.auth.getSession();
+      session = s;
+    } catch (err) {
+      console.error('Supabase session error:', err);
+      // Continue without session
     }
 
-    // Retry with new token
-    headers.set('Authorization', `Bearer ${refreshData.session.access_token}`);
-    response = await fetch(url, { ...options, headers });
+    if (session?.access_token) {
+      headers.set('Authorization', `Bearer ${session.access_token}`);
+    } else {
+      headers.set('X-Device-Fingerprint', generateDeviceFingerprint());
+    }
+
+    // Ensure JSON requests set content type
+    if (options.body && typeof options.body === 'string' && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
+
+    const url = `${API_BASE_URL}${endpoint}`;
+    
+    console.log('API Request:', {
+      method: options.method || 'GET',
+      url,
+      hasAuth: !!session?.access_token,
+      headers: Object.fromEntries(headers.entries())
+    });
+    
+    let response = await fetch(url, { ...options, headers });
+
+    console.log('API Response:', {
+      status: response.status,
+      statusText: response.statusText,
+      url: response.url
+    });
 
     if (response.status === 401) {
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+      // Try refreshing the session silently
+      let refreshData = null;
+      try {
+        const result = await supabase.auth.refreshSession();
+        refreshData = result.data;
+      } catch (err) {
+        console.error('Session refresh error:', err);
       }
-      throw new Error('Authentication failed');
-    }
-  }
+      
+      if (!refreshData || !refreshData.session) {
+        // Do NOT redirect here — let the caller/component decide what to do.
+        // Forcing window.location causes redirect loops when the home page
+        // fires authenticated API calls (e.g. SRS queue) right after login.
+        throw new Error('Session expired. Please log in again.');
+      }
 
-  return response;
+      // Retry with new token
+      headers.set('Authorization', `Bearer ${refreshData.session.access_token}`);
+      response = await fetch(url, { ...options, headers });
+
+      if (response.status === 401) {
+        throw new Error('Authentication failed');
+      }
+    }
+
+    return response;
+  } catch (error) {
+    console.error('apiClient error:', error);
+    throw error;
+  }
 }

@@ -1,9 +1,11 @@
 import os
 import shutil
+import logging
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, UploadFile, Form, BackgroundTasks, HTTPException
+import asyncio
+from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -17,14 +19,46 @@ from app.services.ingestion_service import process_ingestion_batch
 from app.schemas.ingestion import StagedQuestionUpdate
 from sqlalchemy import select
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+@router.get("/health")
+async def ingestion_health():
+    """
+    Health check endpoint for ingestion service.
+    Use this to verify configuration before uploading.
+    """
+    from app.core.config import settings
+    from app.services.ai_content_service import groq_client
+    
+    checks = {
+        "upload_dir_exists": os.path.exists(UPLOAD_DIR),
+        "upload_dir_writable": os.access(UPLOAD_DIR, os.W_OK),
+        "upload_dir_path": UPLOAD_DIR,
+        "groq_client_initialized": groq_client is not None,
+        "groq_api_key_set": bool(settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("placeholder")),
+        "database_url_set": bool(settings.DATABASE_URL),
+    }
+    
+    all_ok = all([
+        checks["upload_dir_exists"],
+        checks["upload_dir_writable"],
+        checks["groq_client_initialized"],
+        checks["groq_api_key_set"],
+        checks["database_url_set"],
+    ])
+    
+    return {
+        "status": "healthy" if all_ok else "degraded",
+        "checks": checks,
+        "issues": [k for k, v in checks.items() if not v] if not all_ok else []
+    }
+
 @router.post("/upload")
 async def upload_paper(
-    background_tasks: BackgroundTasks,
     exam: str = Form(...),
     year: int = Form(...),
     paper_metadata: str = Form(..., alias="paper"),
@@ -33,37 +67,149 @@ async def upload_paper(
     db: AsyncSession = Depends(get_db),
     admin_user: UserDb = Depends(get_current_admin_user)
 ):
-    # Save uploaded files temporarily
-    paper_path = os.path.join(UPLOAD_DIR, paper_file.filename)
-    with open(paper_path, "wb") as buffer:
-        shutil.copyfileobj(paper_file.file, buffer)
+    """
+    Upload a question paper for bulk ingestion.
+    
+    Errors that can occur:
+    - 400: Invalid file format
+    - 401: Not authenticated as admin
+    - 500: Server error (file I/O, database, etc.)
+    """
+    try:
+        # Log the upload attempt
+        logger.info(f"Upload attempt: exam={exam}, year={year}, paper={paper_metadata}, user={admin_user.email}")
         
-    answer_key_path = None
-    if answer_key_file:
-        answer_key_path = os.path.join(UPLOAD_DIR, answer_key_file.filename)
-        with open(answer_key_path, "wb") as buffer:
-            shutil.copyfileobj(answer_key_file.file, buffer)
+        # Validate file exists and has content
+        if not paper_file or not paper_file.filename:
+            raise HTTPException(
+                status_code=400,
+                detail="Paper file is required"
+            )
+        
+        # Validate file extensions
+        allowed_extensions = {'.md', '.pdf', '.txt'}
+        paper_ext = os.path.splitext(paper_file.filename)[1].lower()
+        if paper_ext not in allowed_extensions:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid paper file format '{paper_ext}'. Allowed formats: {', '.join(allowed_extensions)}"
+            )
+        
+        if answer_key_file and answer_key_file.filename:
+            answer_ext = os.path.splitext(answer_key_file.filename)[1].lower()
+            if answer_ext not in allowed_extensions:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Invalid answer key file format '{answer_ext}'. Allowed formats: {', '.join(allowed_extensions)}"
+                )
+        
+        # Ensure upload directory exists
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        logger.info(f"Upload directory: {UPLOAD_DIR}")
+        
+        # Save uploaded files temporarily
+        paper_path = os.path.join(UPLOAD_DIR, paper_file.filename)
+        logger.info(f"Saving paper file to: {paper_path}")
+        
+        try:
+            with open(paper_path, "wb") as buffer:
+                content = await paper_file.read()
+                if not content:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Paper file is empty"
+                    )
+                buffer.write(content)
+            logger.info(f"Paper file saved successfully ({len(content)} bytes)")
+        except Exception as e:
+            logger.error(f"Failed to save paper file: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to save paper file: {str(e)}"
+            )
             
-    # Create DB batch
-    batch = await ingestion_repo.create_batch(
-        db=db,
-        uploaded_by=admin_user.id,
-        exam=exam,
-        year=year,
-        paper=paper_metadata,
-        source_filename=paper_file.filename,
-        answer_key_filename=answer_key_file.filename if answer_key_file else None
-    )
-    
-    # Trigger background parsing task
-    background_tasks.add_task(
-        process_ingestion_batch,
-        batch.id,
-        paper_path,
-        answer_key_path
-    )
-    
-    return {"message": "Upload successful, parsing started.", "batch_id": batch.id, "status": batch.status}
+        answer_key_path = None
+        if answer_key_file and answer_key_file.filename:
+            answer_key_path = os.path.join(UPLOAD_DIR, answer_key_file.filename)
+            logger.info(f"Saving answer key file to: {answer_key_path}")
+            try:
+                with open(answer_key_path, "wb") as buffer:
+                    content = await answer_key_file.read()
+                    buffer.write(content)
+                logger.info(f"Answer key file saved successfully ({len(content)} bytes)")
+            except Exception as e:
+                logger.error(f"Failed to save answer key file: {e}")
+                # Clean up paper file
+                try:
+                    os.remove(paper_path)
+                except:
+                    pass
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to save answer key file: {str(e)}"
+                )
+                
+        # Create DB batch
+        logger.info("Creating database batch record")
+        try:
+            batch = await ingestion_repo.create_batch(
+                db=db,
+                uploaded_by=admin_user.id,
+                exam=exam,
+                year=year,
+                paper=paper_metadata,
+                source_filename=paper_file.filename,
+                answer_key_filename=answer_key_file.filename if answer_key_file else None
+            )
+            logger.info(f"Batch created successfully: {batch.id}")
+        except Exception as e:
+            logger.error(f"Failed to create batch: {e}")
+            # Clean up uploaded files
+            try:
+                os.remove(paper_path)
+                if answer_key_path:
+                    os.remove(answer_key_path)
+            except:
+                pass
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error: Failed to create batch. {str(e)}"
+            )
+        
+        # Trigger background parsing + AI enrichment as a true asyncio task.
+        # asyncio.create_task runs on the app's event loop and is NOT tied
+        # to the request lifecycle, so it survives after the response is sent.
+        logger.info(f"Triggering background parsing for batch {batch.id}")
+        asyncio.create_task(
+            process_ingestion_batch(batch.id, paper_path, answer_key_path)
+        )
+        
+        logger.info(f"Upload successful: batch_id={batch.id}")
+        return {
+            "message": "Upload successful, parsing started.", 
+            "batch_id": str(batch.id), 
+            "status": batch.status,
+            "exam": batch.exam,
+            "year": batch.year,
+            "paper": batch.paper
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in upload: {e}", exc_info=True)
+        # Clean up any uploaded files on error
+        try:
+            if 'paper_path' in locals() and os.path.exists(paper_path):
+                os.remove(paper_path)
+            if 'answer_key_path' in locals() and answer_key_path and os.path.exists(answer_key_path):
+                os.remove(answer_key_path)
+        except:
+            pass
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Unexpected error during upload: {str(e)}\n\nPlease check backend logs for details."
+        )
 
 
 @router.get("/batches/{batch_id}")
@@ -143,8 +289,8 @@ async def publish_batch(
             # 1. Create Question
             new_q = QuestionDb(
                 subtopic_id=q.subtopic_id,
-                exam=batch.exam,
-                year=batch.year,
+                exam=q.exam if q.exam else batch.exam,
+                year=q.year if q.year else batch.year,
                 paper=batch.paper,
                 question_number=q.question_number,
                 question_stem=q.paraphrased_stem.get('en') if q.paraphrased_stem else {"en": q.raw_question_stem},

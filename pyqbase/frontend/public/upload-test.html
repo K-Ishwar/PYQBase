@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct Upload Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        input, button {
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+        }
+        button {
+            background: #0070f3;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0051cc;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>🔬 Direct Upload Test (No Auth)</h1>
+    <p>This tests upload WITHOUT authentication to isolate the issue</p>
+
+    <div class="container">
+        <h3>Test 1: Simple Health Check</h3>
+        <button onclick="testHealth()">Test /health</button>
+        <pre id="health-result">Click button to test...</pre>
+    </div>
+
+    <div class="container">
+        <h3>Test 2: Ingestion Health</h3>
+        <button onclick="testIngestionHealth()">Test /api/v1/admin/ingestion/health</button>
+        <pre id="ingestion-health-result">Click button to test...</pre>
+    </div>
+
+    <div class="container">
+        <h3>Test 3: Direct Upload (Will fail auth, but tests connection)</h3>
+        <input type="file" id="testFile" accept=".md,.pdf,.txt">
+        <button onclick="testUpload()">Test Upload</button>
+        <pre id="upload-result">Select a file and click button...</pre>
+    </div>
+
+    <div class="container">
+        <h3>Test 4: Upload WITH Auth Token</h3>
+        <p>Get your token from localStorage (F12 → Application → Local Storage → supabase.auth.token)</p>
+        <textarea id="authToken" placeholder="Paste your Bearer token here..." style="width:100%; height:100px;"></textarea>
+        <input type="file" id="authTestFile" accept=".md,.pdf,.txt">
+        <button onclick="testAuthUpload()">Test Upload With Auth</button>
+        <pre id="auth-upload-result">Paste token, select file, and click button...</pre>
+    </div>
+
+    <script>
+        const API_URL = 'http://127.0.0.1:8000';
+
+        async function testHealth() {
+            const result = document.getElementById('health-result');
+            result.textContent = '⏳ Testing...';
+            
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    result.className = 'success';
+                    result.textContent = `✅ SUCCESS (${response.status})\n\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    result.className = 'error';
+                    result.textContent = `❌ FAILED (${response.status})\n\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (err) {
+                result.className = 'error';
+                result.textContent = `❌ ERROR: ${err.message}\n\nCannot reach backend at ${API_URL}`;
+            }
+        }
+
+        async function testIngestionHealth() {
+            const result = document.getElementById('ingestion-health-result');
+            result.textContent = '⏳ Testing...';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/v1/admin/ingestion/health`);
+                const data = await response.json();
+                
+                if (response.ok && data.status === 'healthy') {
+                    result.className = 'success';
+                    result.textContent = `✅ SUCCESS - All checks passed\n\n${JSON.stringify(data, null, 2)}`;
+                } else if (response.ok && data.status === 'degraded') {
+                    result.className = 'error';
+                    result.textContent = `⚠️ DEGRADED - Some checks failed\n\nIssues: ${data.issues.join(', ')}\n\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    result.className = 'error';
+                    result.textContent = `❌ FAILED (${response.status})\n\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (err) {
+                result.className = 'error';
+                result.textContent = `❌ ERROR: ${err.message}\n\nCannot reach endpoint`;
+            }
+        }
+
+        async function testUpload() {
+            const result = document.getElementById('upload-result');
+            const file = document.getElementById('testFile').files[0];
+            
+            if (!file) {
+                result.textContent = '❌ Please select a file first';
+                return;
+            }
+
+            result.textContent = '⏳ Testing upload (without auth - expect 401)...';
+            
+            try {
+                const formData = new FormData();
+                formData.append('exam', 'TEST');
+                formData.append('year', '2024');
+                formData.append('paper', 'Test Paper');
+                formData.append('paper_file', file);
+
+                console.log('Uploading to:', `${API_URL}/api/v1/admin/ingestion/upload`);
+                console.log('File:', file.name, file.size, 'bytes');
+
+                const response = await fetch(`${API_URL}/api/v1/admin/ingestion/upload`, {
+                    method: 'POST',
+                    body: formData
+                    // No auth header - should get 401
+                });
+
+                const text = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch {
+                    data = text;
+                }
+
+                if (response.status === 401) {
+                    result.className = 'success';
+                    result.textContent = `✅ CONNECTION WORKS! Got expected 401 (Not Authenticated)\n\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}\n\nThis means backend is reachable.\nThe issue is authentication in your app!`;
+                } else if (response.status === 200) {
+                    result.className = 'success';
+                    result.textContent = `✅ UPLOAD WORKED! (No auth required?)\n\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`;
+                } else {
+                    result.className = 'error';
+                    result.textContent = `Status: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (err) {
+                result.className = 'error';
+                result.textContent = `❌ CANNOT CONNECT TO BACKEND\n\nError: ${err.message}\n\nThis is the same error you're seeing in your app!\n\nCheck:\n1. Is backend running on port 8000?\n2. Is CORS configured?\n3. Any firewall blocking?`;
+            }
+        }
+
+        async function testAuthUpload() {
+            const result = document.getElementById('auth-upload-result');
+            const file = document.getElementById('authTestFile').files[0];
+            const token = document.getElementById('authToken').value.trim();
+            
+            if (!file) {
+                result.textContent = '❌ Please select a file first';
+                return;
+            }
+
+            if (!token) {
+                result.textContent = '❌ Please paste your auth token first';
+                return;
+            }
+
+            result.textContent = '⏳ Testing upload with authentication...';
+            
+            try {
+                const formData = new FormData();
+                formData.append('exam', 'TEST');
+                formData.append('year', '2024');
+                formData.append('paper', 'Test Paper');
+                formData.append('paper_file', file);
+
+                const response = await fetch(`${API_URL}/api/v1/admin/ingestion/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                const text = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch {
+                    data = text;
+                }
+
+                if (response.ok) {
+                    result.className = 'success';
+                    result.textContent = `✅ UPLOAD SUCCESSFUL!\n\nStatus: ${response.status}\nBatch ID: ${data.batch_id}\n\nFull Response:\n${JSON.stringify(data, null, 2)}`;
+                } else if (response.status === 401) {
+                    result.className = 'error';
+                    result.textContent = `❌ Authentication failed (401)\n\nYour token might be expired or invalid.\nOr you're not an admin user.\n\nResponse: ${JSON.stringify(data, null, 2)}`;
+                } else {
+                    result.className = 'error';
+                    result.textContent = `❌ Upload failed (${response.status})\n\nResponse: ${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (err) {
+                result.className = 'error';
+                result.textContent = `❌ CANNOT CONNECT\n\nError: ${err.message}`;
+            }
+        }
+
+        // Auto-run first test on load
+        window.onload = () => {
+            testHealth();
+        };
+    </script>
+</body>
+</html>

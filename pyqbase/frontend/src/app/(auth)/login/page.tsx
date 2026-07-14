@@ -44,7 +44,8 @@ export default function LoginPage() {
 
     try {
       // Sync user with backend immediately after authentication
-      await fetch('http://localhost:8000/api/v1/auth/sync-user', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+      await fetch(`${apiUrl}/api/v1/auth/sync-user`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${data.session?.access_token}`
@@ -52,6 +53,7 @@ export default function LoginPage() {
       })
     } catch (e) {
       console.error('Failed to sync user with backend:', e)
+      // Continue anyway - user is logged in to Supabase
     }
 
     router.push('/')

@@ -1,6 +1,7 @@
 import os
 import json
 import asyncio
+import logging
 from typing import Dict, Any, List, Optional, Tuple
 import traceback
 from uuid import UUID
@@ -15,9 +16,15 @@ from app.core.config import settings
 from app.models.ingestion import IngestionStatus, StagedQuestionDb, ReviewStatus, IngestionBatchDb
 from app.repositories import ingestion_repo, taxonomy_repo
 
+# Setup logger
+logger = logging.getLogger(__name__)
+
 # Initialize Groq client
-# If GROQ_API_KEY is not in settings, this will throw an error when used, which is handled gracefully
-groq_client = AsyncGroq(api_key=settings.GROQ_API_KEY) if settings.GROQ_API_KEY else None
+def _is_valid_api_key(key: str) -> bool:
+    """Check if API key is valid (not a placeholder)"""
+    return bool(key and not key.startswith("placeholder") and len(key) > 20)
+
+groq_client = AsyncGroq(api_key=settings.GROQ_API_KEY, timeout=45.0) if _is_valid_api_key(settings.GROQ_API_KEY) else None
 MODEL_NAME = "llama-3.3-70b-versatile"
 
 def calculate_lexical_similarity(text1: str, text2: str) -> float:
@@ -40,16 +47,20 @@ def calculate_lexical_similarity(text1: str, text2: str) -> float:
     return len(intersection) / len(union)
 
 # Retry decorator for Groq 429 errors (Rate Limit)
-# Waits 60s, then 120s, up to 3 attempts total.
+# Waits 30s, then 60s, up to 3 attempts total.
 @retry(
-    wait=wait_exponential(multiplier=60, min=60, max=120),
+    wait=wait_exponential(multiplier=30, min=30, max=90),
     stop=stop_after_attempt(3),
     retry=retry_if_exception_type(groq.RateLimitError),
     reraise=True
 )
 async def call_groq_with_retry(messages: List[Dict[str, str]], response_format={"type": "json_object"}) -> str:
     if not groq_client:
-        raise ValueError("GROQ_API_KEY is not configured.")
+        raise ValueError(
+            "GROQ_API_KEY is not configured or invalid. "
+            "Please set a valid API key in your .env file. "
+            "Get one from https://console.groq.com/keys"
+        )
         
     response = await groq_client.chat.completions.create(
         model=MODEL_NAME,
@@ -98,9 +109,12 @@ async def generate_paraphrase(staged_question: StagedQuestionDb, strong_prompt: 
         
         result = json.loads(content)
         
+        if "paraphrased_stem" not in result or "paraphrased_options" not in result:
+            return False, 0.0, f"Groq returned incomplete JSON: {content[:200]}"
+        
         # Calculate similarity (combining stem and options for a holistic score)
-        raw_text = staged_question.raw_question_stem + " " + " ".join(staged_question.raw_options.values())
-        para_text = result["paraphrased_stem"] + " " + " ".join(result["paraphrased_options"].values())
+        raw_text = staged_question.raw_question_stem + " " + " ".join(str(v) for v in staged_question.raw_options.values())
+        para_text = result["paraphrased_stem"] + " " + " ".join(str(v) for v in result["paraphrased_options"].values())
         
         sim_score = calculate_lexical_similarity(raw_text, para_text)
         
@@ -112,6 +126,7 @@ async def generate_paraphrase(staged_question: StagedQuestionDb, strong_prompt: 
         return True, sim_score, None
         
     except Exception as e:
+        logger.error(f"generate_paraphrase failed for Q{staged_question.question_number}: {traceback.format_exc()}")
         return False, 0.0, str(e)
 
 
@@ -141,8 +156,10 @@ async def generate_explanation(staged_question: StagedQuestionDb, batch: Ingesti
         "}"
     )
     
+    header_info = f"\n    Document Header Context: {staged_question.header_context}" if staged_question.header_context else ""
+    
     prompt = f"""
-    Context: This question is from the {batch.exam} exam, paper: '{batch.paper}'. Use this context to determine the appropriate Subject.
+    Context: This question is from the {batch.exam} exam, paper: '{batch.paper}'. Use this context to determine the appropriate Subject.{header_info}
     Question Stem: {staged_question.paraphrased_stem.get('en') if staged_question.paraphrased_stem else staged_question.raw_question_stem}
     Options: {json.dumps(staged_question.paraphrased_options.get('en') if staged_question.paraphrased_options else staged_question.raw_options)}
     Correct Option: {staged_question.correct_option}
@@ -179,13 +196,18 @@ async def generate_explanation(staged_question: StagedQuestionDb, batch: Ingesti
         return True, None
         
     except Exception as e:
+        logger.error(f"generate_explanation failed for Q{staged_question.question_number}: {traceback.format_exc()}")
         return False, str(e)
 
 
 async def process_question(db: AsyncSession, q: StagedQuestionDb, batch: IngestionBatchDb):
+    """Process a single question: paraphrase it and generate explanation."""
     # Only process high confidence parsing
     if q.parse_confidence < 0.90:
+        logger.info(f"Skipping Q{q.question_number}: low confidence ({q.parse_confidence})")
         return
+
+    logger.info(f"Processing Q{q.question_number} (ID: {q.id})")
 
     # 1. Paraphrase (Attempt 1)
     success, sim_score, err = await generate_paraphrase(q, strong_prompt=False)
@@ -193,16 +215,23 @@ async def process_question(db: AsyncSession, q: StagedQuestionDb, batch: Ingesti
     if not success:
         q.review_status = ReviewStatus.needs_edit
         q.reviewer_notes = f"AI Paraphrase Failed: {err}"
-        await ingestion_repo.update_staged_question(db, q.id, review_status=q.review_status, reviewer_notes=q.reviewer_notes)
+        logger.warning(f"Paraphrase failed for Q{q.question_number}: {err}")
+        await ingestion_repo.update_staged_question(
+            db, q.id,
+            review_status=q.review_status,
+            reviewer_notes=q.reviewer_notes
+        )
         return
         
-    # Check similarity gate
+    logger.info(f"Q{q.question_number} paraphrased. Similarity score: {sim_score:.2f}")
+
+    # Check similarity gate: if TOO SIMILAR (>= 0.60), try again with stronger prompt
     if sim_score >= 0.60:
-        # Paraphrase (Attempt 2 - Stronger)
+        logger.info(f"Q{q.question_number} similarity too high ({sim_score:.2f}), retrying with strong prompt")
         success, sim_score, err = await generate_paraphrase(q, strong_prompt=True)
         if not success or sim_score >= 0.60:
             q.review_status = ReviewStatus.needs_edit
-            notes = f"Failed Similarity Gate 4. Final Score: {sim_score:.2f}. " + (err if err else "")
+            notes = f"Failed Similarity Gate. Final Score: {sim_score:.2f}. " + (err if err else "")
             q.reviewer_notes = (q.reviewer_notes + "\n" + notes) if q.reviewer_notes else notes
     
     # 2. Generate Explanation & Taxonomy
@@ -211,8 +240,11 @@ async def process_question(db: AsyncSession, q: StagedQuestionDb, batch: Ingesti
         q.review_status = ReviewStatus.needs_edit
         notes = f"Explanation Gen Failed: {exp_err}"
         q.reviewer_notes = (q.reviewer_notes + "\n" + notes) if q.reviewer_notes else notes
+        logger.warning(f"Explanation failed for Q{q.question_number}: {exp_err}")
+    elif exp_success:
+        logger.info(f"Q{q.question_number} explanation generated. Subject: {q.subject_id}")
 
-    # Save updates
+    # Save all updates atomically
     await ingestion_repo.update_staged_question(
         db, 
         q.id, 
@@ -226,26 +258,51 @@ async def process_question(db: AsyncSession, q: StagedQuestionDb, batch: Ingesti
         topic_id=q.topic_id,
         subtopic_id=q.subtopic_id
     )
+    logger.info(f"Q{q.question_number} saved to DB successfully.")
 
 
 async def enrich_batch(batch_id: UUID):
     """
     Background job to run AI paraphrasing and explanations on parsed questions.
+    Opens its OWN db session to avoid connection pool conflicts with the parser session.
     """
+    logger.info(f"[enrich_batch] Starting enrichment for batch {batch_id}")
+    
     async with async_session_maker() as db:
         try:
             batch, questions = await ingestion_repo.get_batch_with_questions(db, batch_id)
             if not batch:
+                logger.error(f"[enrich_batch] Batch {batch_id} not found")
                 return
 
-            # Process questions (can be done sequentially or concurrently. 
-            # Sequential is safer for rate limits initially)
-            for q in questions:
-                await process_question(db, q, batch)
+            if not questions:
+                logger.warning(f"[enrich_batch] No questions found for batch {batch_id}")
+                return
+                
+            logger.info(f"[enrich_batch] Enriching {len(questions)} questions")
+
+            for idx, q in enumerate(questions):
+                logger.info(f"[enrich_batch] Processing {idx + 1}/{len(questions)} (Q{q.question_number})")
+                try:
+                    await process_question(db, q, batch)
+                except Exception as q_err:
+                    # Don't let one question failure kill the whole batch
+                    logger.error(f"[enrich_batch] Error on Q{q.question_number}: {q_err}\n{traceback.format_exc()}")
+                    try:
+                        await ingestion_repo.update_staged_question(
+                            db, q.id,
+                            review_status=ReviewStatus.needs_edit,
+                            reviewer_notes=f"Processing error: {str(q_err)}"
+                        )
+                    except Exception:
+                        pass
+                    continue
                 
             # Update batch status to reviewing
             await ingestion_repo.update_batch_status(db, batch_id, IngestionStatus.reviewing)
+            logger.info(f"[enrich_batch] Completed enrichment for batch {batch_id}")
             
         except Exception as e:
             error_msg = f"Batch AI Enrichment failed: {str(e)}\n{traceback.format_exc()}"
+            logger.error(error_msg)
             await ingestion_repo.update_batch_status(db, batch_id, IngestionStatus.failed, error_log=error_msg)

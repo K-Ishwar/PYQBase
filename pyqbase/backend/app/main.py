@@ -2,14 +2,16 @@ from contextlib import asynccontextmanager
 import asyncio
 import logging
 import os
+import traceback
 
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.starlette import StarletteIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.middleware import SlowAPIMiddleware
@@ -109,10 +111,11 @@ app = FastAPI(title="PYQBase API", lifespan=lifespan)
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
+    allow_origins=["*"] if settings.ENVIRONMENT == "development" else settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Configure Rate Limiting Middleware
@@ -122,6 +125,31 @@ app.add_middleware(SlowAPIMiddleware)
 
 # Register Custom Global Exception Handler
 app.add_exception_handler(PyqBaseException, pyq_exception_handler)
+
+# Global exception handler for all unhandled exceptions
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    Catch-all exception handler to ensure all errors return proper JSON responses
+    """
+    logger.error(
+        f"Unhandled exception in {request.method} {request.url.path}: {exc}",
+        exc_info=True
+    )
+    
+    # Include traceback in development
+    error_detail = str(exc)
+    if settings.ENVIRONMENT != "production":
+        error_detail = f"{exc}\n\nTraceback:\n{traceback.format_exc()}"
+    
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "detail": error_detail,
+            "type": type(exc).__name__,
+            "path": request.url.path,
+        }
+    )
 
 # Register API Routers
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
