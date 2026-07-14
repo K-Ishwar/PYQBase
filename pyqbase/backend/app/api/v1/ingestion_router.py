@@ -6,6 +6,7 @@ from uuid import UUID
 
 import asyncio
 from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -256,7 +257,7 @@ async def update_staged_question(
     db: AsyncSession = Depends(get_db),
     admin_user: UserDb = Depends(get_current_admin_user)
 ):
-    update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
+    update_dict = update_data.model_dump(exclude_unset=True)
     if not update_dict:
         raise HTTPException(status_code=400, detail="No valid fields to update")
         
@@ -265,6 +266,27 @@ async def update_staged_question(
         raise HTTPException(status_code=404, detail="Staged question not found")
         
     return updated
+
+class BulkApproveRequest(BaseModel):
+    ids: list[UUID]
+
+@router.post("/staged/bulk-approve")
+async def bulk_approve_staged(
+    body: BulkApproveRequest,
+    db: AsyncSession = Depends(get_db),
+    admin_user: UserDb = Depends(get_current_admin_user),
+):
+    """Set review_status = approved for all given staged question IDs in one query."""
+    from sqlalchemy import update as sa_update
+    from app.models.ingestion import StagedQuestionDb as _SQ
+    stmt = (
+        sa_update(_SQ)
+        .where(_SQ.id.in_(body.ids))
+        .values(review_status=ReviewStatus.approved)
+    )
+    await db.execute(stmt)
+    await db.commit()
+    return {"approved_count": len(body.ids)}
 
 @router.post("/batches/{batch_id}/publish")
 async def publish_batch(
