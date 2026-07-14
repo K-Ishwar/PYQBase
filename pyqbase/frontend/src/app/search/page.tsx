@@ -37,10 +37,11 @@ export default function SearchPage() {
 function SearchContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { isAdmin } = useAuth()
+  const { isAdmin, user } = useAuth()
+  const targetExam = user?.user_metadata?.target_exam
 
   const [inputValue, setInputValue] = useState(searchParams.get('q') ?? '')
-  const [exam, setExam] = useState(searchParams.get('exam') ?? '')
+  const [exam, setExam] = useState(searchParams.get('exam') ?? targetExam ?? '')
   const [year, setYear] = useState<number | null>(searchParams.get('year') ? Number(searchParams.get('year')) : null)
   const [sort, setSort] = useState('relevance')
   const [offset, setOffset] = useState(0)

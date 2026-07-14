@@ -8,6 +8,8 @@ import { DailyRevisionCard } from "@/components/ui/DailyRevisionCard"
 import { motion } from "framer-motion"
 
 import { useState, useEffect } from "react"
+import { useAuth } from "@/components/providers/auth-provider"
+import { Target, Clock } from "lucide-react"
 
 export default function Home() {
   const staggerContainer = {
@@ -42,6 +44,11 @@ export default function Home() {
       })
   }, [])
 
+  const { user, isLoading } = useAuth()
+  const targetExam = user?.user_metadata?.target_exam
+  const firstName = user?.user_metadata?.first_name || 'Student'
+  const targetYear = user?.user_metadata?.target_year
+
   return (
     <div className="container py-16 md:py-32 max-w-6xl mx-auto space-y-32">
       {/* Hero Section */}
@@ -57,13 +64,28 @@ export default function Home() {
             Alpha v3.0 is live
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter leading-tight">
-            Every <span className="text-gradient">PYQ</span>.<br className="hidden md:block" />
-            Every Topic. One <span className="text-gradient">Base</span>.
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl font-medium">
-            Topic-wise Previous Year Questions for UPSC CSE, UPSC CAPF, MPSC Rajyseva & more.
-          </p>
+          {!isLoading && targetExam ? (
+            <>
+              <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter leading-tight">
+                Welcome back, <span className="text-gradient">{firstName}</span>
+              </h1>
+              <div className="flex items-center gap-4 text-lg md:text-xl text-muted-foreground font-medium">
+                <span className="flex items-center gap-2"><Target className="w-5 h-5 text-primary" /> {targetExam}</span>
+                <span className="text-border">•</span>
+                <span className="flex items-center gap-2"><Clock className="w-5 h-5 text-secondary" /> Target {targetYear}</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter leading-tight">
+                Every <span className="text-gradient">PYQ</span>.<br className="hidden md:block" />
+                Every Topic. One <span className="text-gradient">Base</span>.
+              </h1>
+              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl font-medium">
+                Topic-wise Previous Year Questions for UPSC CSE, UPSC CAPF, MPSC Rajyseva & more.
+              </p>
+            </>
+          )}
           
           <div className="w-full max-w-3xl flex justify-center pt-8">
             <SearchBar />
