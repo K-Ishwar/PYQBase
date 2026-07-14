@@ -37,7 +37,14 @@ export default function ReviewBatchPage() {
         apiClient(`/api/v1/admin/ingestion/batches/${batch_id}/staged`)
       ])
       if (batchRes.ok) setBatch(await batchRes.json())
-      if (qsRes.ok) setQuestions(await qsRes.json())
+      if (qsRes.ok) {
+        const data = await qsRes.json()
+        if (data.length === 0) {
+          router.push("/admin/ingestion")
+        } else {
+          setQuestions(data)
+        }
+      }
     } catch (err) {
       console.error(err)
     } finally {
@@ -115,8 +122,9 @@ export default function ReviewBatchPage() {
         const data = await res.json()
         throw new Error(data.detail || "Failed to publish")
       }
-      alert("Batch published successfully!")
-      router.push("/admin/ingestion")
+      const data = await res.json()
+      alert(`Successfully published ${data.published_count} questions!`)
+      fetchData() // Refresh remaining questions instead of redirecting
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -165,7 +173,7 @@ export default function ReviewBatchPage() {
         </div>
       </div>
 
-      {error && <div className="bg-red-50 text-red-600 p-4 rounded-md border border-red-200">{error}</div>}
+      {error && <div className="bg-red-50 text-red-600 p-4 rounded-md border border-red-200 whitespace-pre-wrap">{error}</div>}
 
       <div className="space-y-6">
         {questions.map((q: any) => (

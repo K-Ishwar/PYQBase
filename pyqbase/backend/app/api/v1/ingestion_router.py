@@ -286,6 +286,34 @@ async def publish_batch(
             raise HTTPException(status_code=400, detail=f"Cannot publish: Question {q.question_number} is approved but missing a correct option.")
         if q.subtopic_id is None:
             raise HTTPException(status_code=400, detail=f"Cannot publish: Question {q.question_number} is missing a Subject/Topic/Subtopic assignment.")
+
+    # Duplicate Detection
+    duplicate_errors = []
+    for q in approved_questions:
+        q_exam = q.exam if q.exam else batch.exam
+        q_year = q.year if q.year else batch.year
+        stem_payload = q.paraphrased_stem.get('en') if q.paraphrased_stem else q.raw_question_stem
+        if isinstance(stem_payload, dict) and 'en' in stem_payload:
+            stem_text = stem_payload['en']
+        elif isinstance(stem_payload, str):
+            stem_text = stem_payload
+        else:
+            stem_text = str(stem_payload)
+
+        stmt = select(QuestionDb).where(
+            QuestionDb.exam == q_exam,
+            QuestionDb.year == q_year,
+            QuestionDb.question_stem['en'].astext.ilike(stem_text)
+        )
+        existing = (await db.execute(stmt)).first()
+        if existing:
+            duplicate_errors.append(f"- Question {q.question_number} is already uploaded.")
+
+    if duplicate_errors:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot publish because the following questions are duplicates:\n" + "\n".join(duplicate_errors)
+        )
             
     try:
         published_count = 0

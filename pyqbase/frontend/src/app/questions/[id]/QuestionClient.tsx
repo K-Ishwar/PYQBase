@@ -107,11 +107,13 @@ export function QuestionClient({ id }: { id: string }) {
 
       {/* Question Details */}
       <div className="rounded-xl border bg-card p-8 shadow-sm">
-        <div className="flex gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-6">
           <span className="px-3 py-1 text-sm font-semibold bg-primary/10 text-primary rounded-md">{question.exam}</span>
           <span className="px-3 py-1 text-sm font-semibold bg-muted rounded-md">{question.year}</span>
           {question.paper && <span className="px-3 py-1 text-sm font-semibold bg-muted rounded-md">{question.paper}</span>}
-          {question.question_number && <span className="px-3 py-1 text-sm font-semibold bg-muted rounded-md">Q. {question.question_number}</span>}
+          {question.subject_name && <span className="px-3 py-1 text-sm font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 rounded-md border border-indigo-200 dark:border-indigo-800">{question.subject_name}</span>}
+          {question.topic_name && <span className="px-3 py-1 text-sm font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 rounded-md border border-emerald-200 dark:border-emerald-800">{question.topic_name}</span>}
+          {question.question_number && <span className="px-3 py-1 text-sm font-semibold bg-muted rounded-md ml-auto">Q. {question.question_number}</span>}
         </div>
         
         <h2 className="text-xl font-medium leading-relaxed mb-8">

@@ -65,14 +65,29 @@ async def get_question(question_id: str, db: AsyncSession = Depends(get_db)):
     Omit correct_option and explanation.
     """
     from app.models.question import QuestionDb
+    from app.models.taxonomy import SubtopicDb, TopicDb, SubjectDb
     from sqlalchemy import select
     from fastapi import HTTPException
     
-    result = await db.execute(select(QuestionDb).where(QuestionDb.id == question_id))
-    question = result.scalar_one_or_none()
+    stmt = (
+        select(
+            QuestionDb,
+            SubtopicDb.name.label("subtopic_name"),
+            TopicDb.name.label("topic_name"),
+            SubjectDb.name.label("subject_name")
+        )
+        .join(SubtopicDb, QuestionDb.subtopic_id == SubtopicDb.id)
+        .join(TopicDb, SubtopicDb.topic_id == TopicDb.id)
+        .join(SubjectDb, TopicDb.subject_id == SubjectDb.id)
+        .where(QuestionDb.id == question_id)
+    )
+    result = await db.execute(stmt)
+    row = result.first()
     
-    if not question:
+    if not row:
         raise HTTPException(status_code=404, detail="Question not found")
+    
+    question, subtopic_name, topic_name, subject_name = row
         
     return QuestionDetailResponse(
         id=str(question.id),
@@ -86,6 +101,9 @@ async def get_question(question_id: str, db: AsyncSession = Depends(get_db)):
         has_image=question.has_image,
         image_url=question.image_url,
         elo_rating=question.elo_rating,
+        subject_name=subject_name,
+        topic_name=topic_name,
+        subtopic_name=subtopic_name,
     )
 
 

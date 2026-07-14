@@ -13,6 +13,9 @@ export interface QuestionDetailResponse {
   question_type: string
   has_image: boolean
   image_url?: string
+  subject_name?: string
+  topic_name?: string
+  subtopic_name?: string
   elo_rating: number
 }
 

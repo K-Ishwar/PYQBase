@@ -152,8 +152,10 @@ def extract_questions_from_text(batch_id: UUID, text: str) -> List[StagedQuestio
     """
     questions = []
     
-    # Strictly match headers (e.g., ### Header) OR 'Question 1', 'Q1.', etc.
-    pattern = r'^(?:(#{1,6})\s+([^\n]+)|(?:Question\s+|Q)(\d+)(?:[\.\:\]\)]|\s*\\\.)?\s*\n*)'
+    # Strictly match headers OR 'Question 1', 'Q1.', '1.', etc.
+    # Group 3 captures digits after 'Question'/'Q' with optional punctuation.
+    # Group 4 captures standalone digits with mandatory punctuation.
+    pattern = r'^(?:(#{1,6})\s+([^\n]+)|(?:Question\s+|Q)(\d+)(?:[\.\:\]\)]|\s*\\\.)?\s*\n*|(\d+)(?:[\.\:\]\)]|\s*\\\.)\s+)'
     matches = list(re.finditer(pattern, text, flags=re.MULTILINE | re.IGNORECASE))
     
     active_headers = {}
@@ -176,7 +178,7 @@ def extract_questions_from_text(batch_id: UUID, text: str) -> List[StagedQuestio
             continue
             
         # If we reach here, it's a question
-        q_num_str = match.group(3)
+        q_num_str = match.group(3) or match.group(4)
         
         start_idx = match.end()
         end_idx = matches[i+1].start() if i + 1 < len(matches) else len(text)

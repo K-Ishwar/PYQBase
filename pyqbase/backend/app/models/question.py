@@ -90,6 +90,9 @@ class QuestionResponse(BaseModel):
     image_url: Optional[str]
     parse_confidence: Optional[float]
     subtopic_id: UUID
+    subject_name: Optional[str] = None
+    topic_name: Optional[str] = None
+    subtopic_name: Optional[str] = None
     elo_rating: int
     created_at: datetime
 
@@ -111,6 +114,9 @@ class QuestionListItem(BaseModel):
     has_image: bool
     image_url: Optional[str]
     subtopic_id: UUID
+    subject_name: Optional[str] = None
+    topic_name: Optional[str] = None
+    subtopic_name: Optional[str] = None
     elo_rating: int
     ts_rank: Optional[float] = None   # populated by search queries
     created_at: datetime

@@ -17,7 +17,7 @@ export function Navbar() {
   const router = useRouter()
   const inputRef = React.useRef<HTMLInputElement>(null)
   
-  const { user, isLoading } = useAuth()
+  const { user, isLoading, isAdmin } = useAuth()
   const [profileOpen, setProfileOpen] = React.useState(false)
   const supabase = createClient()
 
@@ -59,12 +59,23 @@ export function Navbar() {
   return (
     <nav className="sticky top-0 z-50 w-full liquid-glass border-b-0">
       <div className="container flex h-16 items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-2xl font-bold tracking-tight text-primary">
-            PYQ<span className="text-foreground">Base</span>
-          </span>
-        </Link>
+        {/* Logo and Admin Link */}
+        <div className="flex items-center gap-6">
+          <Link href="/" className="flex items-center gap-2">
+            <span className="text-2xl font-bold tracking-tight text-primary">
+              PYQ<span className="text-foreground">Base</span>
+            </span>
+          </Link>
+          
+          {isAdmin && (
+            <Link 
+              href="/admin/ingestion" 
+              className="hidden md:flex items-center gap-1.5 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary-foreground bg-primary/90 hover:bg-primary rounded-full transition-colors"
+            >
+              Admin
+            </Link>
+          )}
+        </div>
 
         {/* Inline search bar (shown when open) */}
         {searchOpen ? (

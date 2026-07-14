@@ -12,6 +12,9 @@ export interface QuestionListItem {
   has_image: boolean
   image_url?: string | null
   subtopic_id: string
+  subject_name?: string
+  topic_name?: string
+  subtopic_name?: string
   elo_rating: number
   ts_rank?: number
   created_at: string
