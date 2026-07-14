@@ -3,7 +3,7 @@
 import { use, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, Lock, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Lock, CheckCircle2, BookOpen } from 'lucide-react'
 import { useAuth } from '@/components/providers/auth-provider'
 import { useQuestionDetail, useQuestionSolution } from '@/lib/hooks/useQuestions'
 import { useSearch } from '@/lib/hooks/useSearch'
@@ -41,10 +41,10 @@ export function QuestionClient({ id }: { id: string }) {
   })
 
   // Determine Prev/Next IDs
-  const currentIndex = searchResults?.questions.findIndex(q => q.id === id) ?? -1
-  const prevId = currentIndex > 0 ? searchResults?.questions[currentIndex - 1].id : null
-  const nextId = currentIndex !== -1 && currentIndex < (searchResults?.questions.length || 0) - 1 
-    ? searchResults?.questions[currentIndex + 1].id 
+  const currentIndex = searchResults?.data?.findIndex((q: any) => q.id === id) ?? -1
+  const prevId = currentIndex > 0 ? searchResults?.data[currentIndex - 1].id : null
+  const nextId = currentIndex !== -1 && currentIndex < (searchResults?.data?.length || 0) - 1 
+    ? searchResults?.data[currentIndex + 1].id 
     : null
 
   const handleLogin = async () => {
@@ -115,7 +115,7 @@ export function QuestionClient({ id }: { id: string }) {
         </div>
         
         <h2 className="text-xl font-medium leading-relaxed mb-8">
-          {question.question_stem}
+          {typeof question.question_stem === 'string' ? question.question_stem : question.question_stem?.en || ''}
         </h2>
         
         {question.has_image && question.image_url && (
