@@ -279,7 +279,7 @@ async def _schedule_hard_delete() -> None:
         return
 
     async with async_session_maker() as db:
-        start_of_day_utc = now_ist.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
+        start_of_day_utc = now_ist.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc).replace(tzinfo=None)
         existing = (
             await db.execute(
                 text("""
@@ -312,7 +312,7 @@ async def _schedule_srs_reminder() -> None:
         return
 
     async with async_session_maker() as db:
-        start_of_day_utc = now_ist.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
+        start_of_day_utc = now_ist.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc).replace(tzinfo=None)
         existing = (
             await db.execute(
                 text("""
