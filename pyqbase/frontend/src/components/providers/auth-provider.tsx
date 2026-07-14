@@ -7,6 +7,7 @@ import { User } from '@supabase/supabase-js'
 type AuthContextType = {
   user: User | null
   isLoading: boolean
+  isAdmin: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -35,8 +36,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [supabase])
 
+  const isAdmin = user?.app_metadata?.role === 'admin' || user?.user_metadata?.role === 'admin' || user?.email === 'omekhande4@gmail.com'
+
   return (
-    <AuthContext.Provider value={{ user, isLoading }}>
+    <AuthContext.Provider value={{ user, isLoading, isAdmin }}>
       {children}
     </AuthContext.Provider>
   )

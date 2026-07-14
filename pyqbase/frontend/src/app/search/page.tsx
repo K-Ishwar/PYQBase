@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { Search } from 'lucide-react'
 import { useDebounce } from '@/lib/hooks/useDebounce'
 import { useSearch } from '@/lib/hooks/useSearch'
+import { useAuth } from '@/components/providers/auth-provider'
 import { SearchResultCard } from '@/components/ui/SearchResultCard'
 import { SearchResultSkeletonList } from '@/components/ui/SearchResultSkeleton'
 
@@ -35,6 +36,7 @@ export default function SearchPage() {
 function SearchContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { isAdmin } = useAuth()
 
   const [inputValue, setInputValue] = useState(searchParams.get('q') ?? '')
   const [exam, setExam] = useState(searchParams.get('exam') ?? '')
@@ -199,7 +201,7 @@ function SearchContent() {
               key={item.id}
               item={item}
               query={debouncedQuery}
-              isPremiumLocked={offset === 0 && i >= FREE_QUOTA}
+              isPremiumLocked={!isAdmin && offset === 0 && i >= FREE_QUOTA}
             />
           ))}
 
