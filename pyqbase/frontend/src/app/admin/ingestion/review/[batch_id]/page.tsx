@@ -21,9 +21,9 @@ export default function ReviewBatchPage() {
   useEffect(() => {
     fetchData()
     fetchTaxonomy()
-    // Poll every 5 seconds if still parsing or reviewing
+    // Poll every 5 seconds if still parsing or AI is processing (parsed)
     const interval = setInterval(() => {
-      if (batch?.status === "parsing" || batch?.status === "reviewing") {
+      if (batch?.status === "parsing" || batch?.status === "parsed") {
         fetchData()
       }
     }, 5000)
@@ -143,6 +143,11 @@ export default function ReviewBatchPage() {
 
   const canPublish = questions.some(q => q.review_status === "approved")
 
+  const isAIProcessing = batch?.status === "parsing" || batch?.status === "parsed"
+  const totalQuestions = questions.length
+  const processedQuestions = questions.filter(q => q.subject_id !== null || q.parse_confidence < 0.90 || (q.reviewer_notes && q.reviewer_notes.includes("Processing error"))).length
+  const progressPercent = totalQuestions > 0 ? Math.round((processedQuestions / totalQuestions) * 100) : 0
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div className="flex justify-between items-center bg-card p-4 rounded-xl border shadow-sm">
@@ -172,6 +177,21 @@ export default function ReviewBatchPage() {
           </button>
         </div>
       </div>
+
+      {isAIProcessing && totalQuestions > 0 && (
+        <div className="bg-card p-4 rounded-xl border shadow-sm space-y-2">
+          <div className="flex justify-between text-sm font-medium">
+            <span>AI Analysis in Progress...</span>
+            <span>{processedQuestions} / {totalQuestions} ({progressPercent}%)</span>
+          </div>
+          <div className="w-full bg-secondary rounded-full h-2.5 overflow-hidden">
+            <div 
+              className="bg-primary h-2.5 rounded-full transition-all duration-500 ease-in-out" 
+              style={{ width: `${progressPercent}%` }}
+            ></div>
+          </div>
+        </div>
+      )}
 
       {error && <div className="bg-red-50 text-red-600 p-4 rounded-md border border-red-200 whitespace-pre-wrap">{error}</div>}
 
