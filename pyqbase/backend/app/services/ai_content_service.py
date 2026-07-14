@@ -76,19 +76,15 @@ async def call_groq_with_retry(
 # that returns both. This halves token consumption per question.
 # ─────────────────────────────────────────────────────────────────────────────
 
-_SYSTEM_PROMPT = """You are an academic content expert. Given a multiple-choice question, you must:
-1. Rewrite the stem and all four options in your own words (preserve meaning, change wording).
-2. Provide a concise explanation for the correct answer.
-3. Classify the question into subject/topic/subtopic.
+_SYSTEM_PROMPT = """You are an academic classification expert. Given a multiple-choice question and its exam context, your ONLY job is to classify the question into the correct subject, topic, and subtopic.
+
+You MUST choose the "subject" and "topic" strictly from the allowed taxonomy mapping provided below. If a perfect match isn't available, pick the closest existing subject/topic. You may generate a new "subtopic" string if none exists.
+
+Allowed Taxonomy:
+{taxonomy_context}
 
 Output ONLY valid JSON in this exact format (no extra keys):
 {
-  "paraphrased_stem": "rewritten question stem",
-  "paraphrased_options": {"A": "...", "B": "...", "C": "...", "D": "..."},
-  "concept_summary": "one sentence overview",
-  "why_correct": "why the correct option is right",
-  "why_others_wrong": "brief note on incorrect options",
-  "exam_relevance_note": "relevance to competitive exams",
   "subject": "e.g. Science",
   "topic": "e.g. Biology",
   "subtopic": "e.g. Cell Division"
@@ -99,6 +95,7 @@ async def enrich_question_single_call(
     staged_question: StagedQuestionDb,
     batch: IngestionBatchDb,
     db: AsyncSession,
+    taxonomy_context: str,
 ) -> bool:
     """
     ONE Groq API call that does paraphrase + explanation + taxonomy together.
@@ -115,9 +112,10 @@ async def enrich_question_single_call(
     )
 
     try:
+        sys_prompt = _SYSTEM_PROMPT.replace("{taxonomy_context}", taxonomy_context)
         content = await call_groq_with_retry(
             [
-                {"role": "system", "content": _SYSTEM_PROMPT},
+                {"role": "system", "content": sys_prompt},
                 {"role": "user", "content": user_msg},
             ],
             max_tokens=700,
@@ -125,27 +123,13 @@ async def enrich_question_single_call(
 
         result = json.loads(content)
 
-        # ── Paraphrase ────────────────────────────────────────────────────
-        if "paraphrased_stem" in result and "paraphrased_options" in result:
-            raw_text = staged_question.raw_question_stem + " " + " ".join(
-                str(v) for v in staged_question.raw_options.values()
-            )
-            para_text = result["paraphrased_stem"] + " " + " ".join(
-                str(v) for v in result["paraphrased_options"].values()
-            )
-            staged_question.paraphrased_stem = {"en": result["paraphrased_stem"]}
-            staged_question.paraphrased_options = {"en": result["paraphrased_options"]}
-            staged_question.lexical_similarity_score = calculate_lexical_similarity(raw_text, para_text)
-
-        # ── Explanation ───────────────────────────────────────────────────
-        ai_exp = {
-            "concept_summary": result.get("concept_summary", ""),
-            "why_correct": result.get("why_correct", ""),
-            "why_others_wrong": result.get("why_others_wrong", ""),
-            "exam_relevance_note": result.get("exam_relevance_note", ""),
-            "disclaimer": "AI-Generated · Verify from official sources",
-        }
-        staged_question.ai_explanation = {"en": ai_exp}
+        # ── Leave Questions and Options Unchanged ─────────────────────────
+        staged_question.paraphrased_stem = None
+        staged_question.paraphrased_options = None
+        staged_question.lexical_similarity_score = 0.0
+        
+        # ── Leave Explanation Empty ───────────────────────────────────────
+        staged_question.ai_explanation = None
 
         # ── Taxonomy ──────────────────────────────────────────────────────
         sub_name = result.get("subject", "Uncategorized")
@@ -170,14 +154,14 @@ async def enrich_question_single_call(
         return False
 
 
-async def process_question(db: AsyncSession, q: StagedQuestionDb, batch: IngestionBatchDb):
+async def process_question(db: AsyncSession, q: StagedQuestionDb, batch: IngestionBatchDb, taxonomy_context: str):
     """Process a single question with one combined Groq API call."""
     if q.parse_confidence < 0.90:
         logger.info(f"Skipping Q{q.question_number}: low confidence ({q.parse_confidence:.2f})")
         return
 
     logger.info(f"Enriching Q{q.question_number} ...")
-    success = await enrich_question_single_call(q, batch, db)
+    success = await enrich_question_single_call(q, batch, db, taxonomy_context)
 
     if not success:
         q.review_status = ReviewStatus.needs_edit
@@ -218,10 +202,18 @@ async def enrich_batch(batch_id: UUID):
 
             logger.info(f"[enrich_batch] {len(questions)} questions to enrich")
 
+            # ── Fetch existing taxonomy tree to guide AI ──
+            subjects = await taxonomy_repo.list_subjects(db)
+            taxonomy_tree = {}
+            for s in subjects:
+                topics = await taxonomy_repo.list_topics(db, s.id)
+                taxonomy_tree[s.name] = [t.name for t in topics]
+            taxonomy_context = json.dumps(taxonomy_tree, indent=2)
+
             for idx, q in enumerate(questions):
                 logger.info(f"[enrich_batch] {idx + 1}/{len(questions)} — Q{q.question_number}")
                 try:
-                    await process_question(db, q, batch)
+                    await process_question(db, q, batch, taxonomy_context)
                 except Exception as q_err:
                     logger.error(
                         f"[enrich_batch] Q{q.question_number} crashed: {q_err}\n"

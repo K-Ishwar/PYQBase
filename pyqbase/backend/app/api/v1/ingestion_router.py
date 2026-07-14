@@ -276,16 +276,20 @@ async def publish_batch(
     if not batch:
         raise HTTPException(status_code=404, detail="Batch not found")
         
-    # Validation: Check if ANY row prevents publishing
-    for q in questions:
+    approved_questions = [q for q in questions if q.review_status == ReviewStatus.approved]
+    if not approved_questions:
+        raise HTTPException(status_code=400, detail="No approved questions to publish.")
+
+    # Validation: Check only approved questions
+    for q in approved_questions:
         if q.correct_option is None:
-            raise HTTPException(status_code=400, detail=f"Cannot publish: Question {q.question_number} is missing a correct option.")
-        if q.parse_confidence < 0.90 and q.review_status != ReviewStatus.approved:
-            raise HTTPException(status_code=400, detail=f"Cannot publish: Low-confidence question {q.question_number} must be explicitly approved.")
+            raise HTTPException(status_code=400, detail=f"Cannot publish: Question {q.question_number} is approved but missing a correct option.")
+        if q.subtopic_id is None:
+            raise HTTPException(status_code=400, detail=f"Cannot publish: Question {q.question_number} is missing a Subject/Topic/Subtopic assignment.")
             
-    published_count = 0
-    for q in questions:
-        if q.review_status == ReviewStatus.approved:
+    try:
+        published_count = 0
+        for q in approved_questions:
             # 1. Create Question
             new_q = QuestionDb(
                 subtopic_id=q.subtopic_id,
@@ -312,11 +316,21 @@ async def publish_batch(
                 new_payload={"staged_question_id": str(q.id)}
             )
             db.add(log)
-            published_count += 1
             
-    # Mark batch as completed
-    batch.status = IngestionStatus.completed
-    await db.commit()
-    
-    return {"message": f"Successfully published {published_count} questions.", "published_count": published_count}
+            # 3. Remove from staging so it doesn't show up again
+            await db.delete(q)
+            published_count += 1
+                
+        # Mark batch as completed only if there are no pending questions left
+        remaining_questions = [q for q in questions if q.review_status not in (ReviewStatus.approved, ReviewStatus.rejected)]
+        if len(remaining_questions) == 0:
+            batch.status = IngestionStatus.completed
+            
+        await db.commit()
+        
+        return {"message": f"Successfully published {published_count} questions.", "published_count": published_count}
+    except Exception as e:
+        import traceback
+        await db.rollback()
+        raise HTTPException(status_code=400, detail=f"Database Crash during publish: {str(e)}\n\nTrace: {traceback.format_exc()}")
 

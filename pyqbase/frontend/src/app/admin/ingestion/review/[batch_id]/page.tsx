@@ -133,9 +133,7 @@ export default function ReviewBatchPage() {
   if (loading) return <div className="p-10 text-center">Loading batch data...</div>
   if (!batch) return <div className="p-10 text-center text-red-500">Batch not found</div>
 
-  const canPublish = questions.length > 0 && questions.every(q => 
-    q.review_status === "approved" || q.review_status === "rejected"
-  )
+  const canPublish = questions.some(q => q.review_status === "approved")
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -189,61 +187,57 @@ export default function ReviewBatchPage() {
               </div>
               <div className="space-x-2">
                 <button onClick={() => updateQuestionStatus(q.id, { review_status: "approved" })} className="px-3 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded text-sm font-medium">Approve</button>
-                <button onClick={() => updateQuestionStatus(q.id, { review_status: "needs_edit" })} className="px-3 py-1 bg-yellow-100 text-yellow-700 hover:bg-yellow-200 rounded text-sm font-medium">Needs Edit</button>
                 <button onClick={() => updateQuestionStatus(q.id, { review_status: "rejected" })} className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded text-sm font-medium">Reject</button>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-8">
-              {/* Left: Raw Extraction */}
+            <div className="grid gap-8">
+              {/* Raw Extraction */}
               <div className="space-y-4">
                 <div className="flex justify-between items-end">
-                  <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Raw OCR Extraction (Ground Truth)</h4>
+                  <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Question Content</h4>
                   {q.header_context && (
                     <span className="text-[10px] text-slate-400 font-mono truncate max-w-[200px]" title={q.header_context}>
                       {q.header_context}
                     </span>
                   )}
                 </div>
-                <div className="bg-muted/50 p-4 rounded-lg font-mono text-sm whitespace-pre-wrap">
-                  {q.raw_question_stem}
-                  <div className="mt-4 space-y-1">
+                <div className="bg-muted/50 p-4 rounded-lg font-mono text-sm space-y-4">
+                  <textarea 
+                    className="w-full bg-background border p-2 rounded resize-y"
+                    defaultValue={q.raw_question_stem}
+                    rows={4}
+                    onBlur={(e) => {
+                      if (e.target.value !== q.raw_question_stem) {
+                        updateQuestionStatus(q.id, { raw_question_stem: e.target.value });
+                      }
+                    }}
+                  />
+                  <div className="space-y-2">
                     {Object.entries(q.raw_options || {}).map(([k, v]) => (
-                      <div key={k}>{k}) {v as string}</div>
+                      <div key={k} className="flex gap-2 items-start">
+                        <span className={`font-bold mt-2 ${q.correct_option === k ? 'text-green-600' : ''}`}>{k})</span>
+                        <input 
+                          className="flex-1 bg-background border p-2 rounded" 
+                          defaultValue={v as string} 
+                          onBlur={(e) => {
+                            if (e.target.value !== v) {
+                              const newOptions = { ...q.raw_options, [k]: e.target.value };
+                              updateQuestionStatus(q.id, { raw_options: newOptions });
+                            }
+                          }}
+                        />
+                      </div>
                     ))}
                   </div>
                 </div>
               </div>
 
-              {/* Right: AI Paraphrased */}
+              {/* Right/Bottom: Taxonomy Assignment */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">AI Paraphrased (Public)</h4>
-                  {q.lexical_similarity_score && (
-                    <span className="text-xs font-medium bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                      Sim: {(q.lexical_similarity_score * 100).toFixed(1)}%
-                    </span>
-                  )}
+                  <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Taxonomy Assignment</h4>
                 </div>
-                
-                <div className="bg-background border p-4 rounded-lg space-y-4">
-                  <textarea 
-                    className="w-full text-sm p-2 border rounded resize-y" 
-                    defaultValue={q.paraphrased_stem?.en || "Processing..."}
-                    rows={3}
-                  />
-                  
-                  <div className="space-y-2">
-                    {Object.entries(q.paraphrased_options?.en || {}).map(([k, v]) => (
-                      <div key={k} className="flex gap-2 items-start">
-                        <span className={`font-bold mt-2 ${q.correct_option === k ? 'text-green-600' : ''}`}>{k})</span>
-                        <input className="flex-1 text-sm p-2 border rounded" defaultValue={v as string} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Subject/Topic Assignment */}
                 <div className="grid grid-cols-3 gap-2">
                    <select 
                      className="text-sm p-2 border rounded bg-background text-foreground" 

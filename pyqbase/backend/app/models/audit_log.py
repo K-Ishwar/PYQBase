@@ -16,4 +16,4 @@ class AuditLogDb(SQLModel, table=True):
     action: str  # 'CREATE' | 'UPDATE' | 'DELETE'
     previous_payload: Optional[dict] = Field(default=None, sa_column=Column(JSONB))
     new_payload: Optional[dict] = Field(default=None, sa_column=Column(JSONB))
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))

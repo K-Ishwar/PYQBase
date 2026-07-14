@@ -15,7 +15,7 @@ class MockTestDb(SQLModel, table=True):
     question_ids: List[UUID] = Field(sa_column=Column(ARRAY(PG_UUID), nullable=False))
     mode: str  # "custom" | "weak_area"
     score: Optional[float] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
 # API Schemas
 class MockTestGenerateRequest(BaseModel):

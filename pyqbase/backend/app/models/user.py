@@ -15,4 +15,4 @@ class UserBase(SQLModel):
 class UserDb(UserBase, table=True):
     __tablename__ = "users"
     id: UUID = Field(primary_key=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))

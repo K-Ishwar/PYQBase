@@ -30,7 +30,7 @@ class QuestionDb(SQLModel, table=True):
     syllabus_point_id: Optional[int] = None
     elo_rating: int = Field(default=1200)
     # search_vector is managed by a DB trigger — excluded from writes
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
 
 # ─── API Payload Schemas ──────────────────────────────────────────────────────

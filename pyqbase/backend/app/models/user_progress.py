@@ -34,7 +34,7 @@ class BackgroundJobDb(SQLModel, table=True):
     payload: dict = Field(sa_column=Column(JSONB, nullable=False))
     status: str = Field(default="pending")   # pending | processing | completed | failed
     locked_at: Optional[datetime] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
 class UserSrsDb(SQLModel, table=True):
     """
