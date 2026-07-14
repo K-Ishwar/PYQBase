@@ -2,19 +2,22 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import { Search, Moon, Sun, X, User as UserIcon, LogOut } from "lucide-react"
 import { useAuth } from "@/components/providers/auth-provider"
 import { createClient } from "@/lib/supabase/client"
 import { MagneticButton } from "@/components/ui/MagneticButton"
+import { motion } from "framer-motion"
 
 export function Navbar() {
   const { setTheme, theme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
   const [searchOpen, setSearchOpen] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("")
+  const [hoveredPath, setHoveredPath] = React.useState<string | null>(null)
   const router = useRouter()
+  const pathname = usePathname()
   const inputRef = React.useRef<HTMLInputElement>(null)
   
   const { user, isLoading, isAdmin } = useAuth()
@@ -100,21 +103,58 @@ export function Navbar() {
           </form>
         ) : (
           /* Center Nav Links */
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium">
-            <Link href="/" className="transition-colors hover:text-primary">Home</Link>
-            <Link href="/exams" className="text-muted-foreground transition-colors hover:text-primary">Exams</Link>
-            <Link href="/subjects" className="text-muted-foreground transition-colors hover:text-primary">Subjects</Link>
-            <Link href="/years" className="text-muted-foreground transition-colors hover:text-primary">Years</Link>
-            <Link href="/search" className="text-muted-foreground transition-colors hover:text-primary">Search</Link>
-            <Link href="/mock-tests" className="text-muted-foreground transition-colors hover:text-primary">Mock Tests</Link>
+          <div 
+            className="hidden md:flex items-center gap-1 text-sm font-medium"
+            onMouseLeave={() => setHoveredPath(null)}
+          >
+            {[
+              { href: "/", label: "Home" },
+              { href: "/exams", label: "Exams" },
+              { href: "/subjects", label: "Subjects" },
+              { href: "/years", label: "Years" },
+              { href: "/search", label: "Search" },
+              { href: "/mock-tests", label: "Mock Tests" },
+            ].map((link) => {
+              const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href))
+              return (
+                <Link 
+                  key={link.href}
+                  href={link.href} 
+                  onMouseEnter={() => setHoveredPath(link.href)}
+                  className="relative px-4 py-2 transition-colors rounded-full flex items-center justify-center"
+                >
+                  {hoveredPath === link.href && (
+                    <motion.div
+                      layoutId="navbar-hover-pill"
+                      className="absolute inset-0 bg-primary/10 rounded-full z-0"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ type: "spring", stiffness: 350, damping: 30, mass: 0.8 }}
+                    />
+                  )}
+                  <span className={`relative z-10 transition-colors ${isActive ? 'text-primary font-bold' : 'text-muted-foreground hover:text-foreground'}`}>
+                    {link.label}
+                  </span>
+                  {isActive && (
+                    <div className="absolute inset-x-0 bottom-0 flex justify-center">
+                      <motion.div
+                        layoutId="navbar-active-indicator"
+                        className="w-4 h-0.5 rounded-full bg-primary z-10"
+                        transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                      />
+                    </div>
+                  )}
+                </Link>
+              )
+            })}
           </div>
         )}
 
-        {/* Right Side Actions */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setSearchOpen((o) => !o)}
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             aria-label="Open search"
           >
             <Search className="h-5 w-5" />
@@ -122,7 +162,7 @@ export function Navbar() {
 
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="text-muted-foreground hover:text-foreground"
+            className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             {mounted && theme === "dark" ? (
               <Sun className="h-5 w-5" />
@@ -137,7 +177,7 @@ export function Navbar() {
                 <div className="relative">
                   <button
                     onClick={() => setProfileOpen(!profileOpen)}
-                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground rounded-md hover:bg-muted transition-colors"
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-foreground rounded-md border border-border/50 bg-background/40 backdrop-blur-md shadow-sm hover:bg-muted transition-all active:shadow-[0_0_15px_hsl(var(--primary))] active:scale-95"
                   >
                     <UserIcon className="h-4 w-4" />
                     Profile
@@ -162,12 +202,12 @@ export function Navbar() {
                 <>
                   <Link
                     href="/login"
-                    className="px-4 py-2 text-sm font-medium text-primary bg-primary/10 rounded-md hover:bg-primary/20 transition-colors"
+                    className="px-4 py-2 text-sm font-medium text-primary bg-primary/10 backdrop-blur-md border border-primary/20 rounded-md hover:bg-primary/20 transition-all active:shadow-[0_0_15px_hsl(var(--primary))] active:scale-95 shadow-sm"
                   >
                     Login
                   </Link>
-                  <MagneticButton className="px-4 py-2 text-sm font-bold text-primary-foreground bg-primary rounded-md shadow-md shadow-primary/20 hover:bg-primary-dark hover:shadow-lg transition-colors">
-                    <Link href="/signup">
+                  <MagneticButton className="rounded-md shadow-md shadow-primary/20 hover:shadow-lg transition-all bg-primary border border-primary-foreground/20 backdrop-blur-md active:shadow-[0_0_20px_hsl(var(--primary))]">
+                    <Link href="/signup" className="px-4 py-2 block w-full h-full text-sm font-bold text-primary-foreground hover:bg-primary-dark transition-all rounded-md active:scale-95">
                       Sign Up
                     </Link>
                   </MagneticButton>

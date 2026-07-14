@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { LayoutDashboard, HelpCircle, Layers, UploadCloud } from 'lucide-react'
 
 async function getAdminUser() {
   const cookieStore = cookies()
@@ -44,14 +45,11 @@ export default async function AdminLayout({
           </div>
           <p className="mt-1 text-xs text-muted-foreground truncate">{admin.email}</p>
         </div>
-        <nav className="p-4 space-y-1">
-          <AdminNavLink href="/admin" label="Dashboard" icon="⊞" />
-          <AdminNavLink href="/admin/questions" label="Questions" icon="?" />
-          <AdminNavLink href="/admin/taxonomy" label="Taxonomy" icon="⋮" />
-          <AdminNavLink href="/admin/ingestion" label="Bulk Ingestion" icon="↑" />
-          <div className="pt-4 mt-4 border-t border-border">
-            <AdminNavLink href="/" label="← Back to Site" icon="↩" />
-          </div>
+        <nav className="p-4 space-y-2">
+          <AdminNavLink href="/admin" label="Dashboard" icon={<LayoutDashboard className="w-5 h-5" />} />
+          <AdminNavLink href="/admin/questions" label="Questions" icon={<HelpCircle className="w-5 h-5" />} />
+          <AdminNavLink href="/admin/taxonomy" label="Taxonomy" icon={<Layers className="w-5 h-5" />} />
+          <AdminNavLink href="/admin/ingestion" label="Bulk Ingestion" icon={<UploadCloud className="w-5 h-5" />} />
         </nav>
       </aside>
 
@@ -68,13 +66,13 @@ export default async function AdminLayout({
   )
 }
 
-function AdminNavLink({ href, label, icon }: { href: string; label: string; icon: string }) {
+function AdminNavLink({ href, label, icon }: { href: string; label: string; icon: React.ReactNode }) {
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+      className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted-foreground hover:bg-primary/10 hover:text-primary transition-all active:scale-95"
     >
-      <span className="text-base">{icon}</span>
+      {icon}
       {label}
     </Link>
   )

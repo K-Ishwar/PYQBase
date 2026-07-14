@@ -1,14 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSubjects } from '@/lib/hooks/useTaxonomy'
 import { useGenerateMockTest } from '@/lib/hooks/useMockTests'
 import { useAuth } from '@/components/providers/auth-provider'
 import { Lock, Zap, BookOpen, Target, ChevronRight, History } from 'lucide-react'
 import Link from 'next/link'
+import { MagneticButton } from '@/components/ui/MagneticButton'
 
-const EXAMS = ['UPSC CSE', 'UPSC CAPF', 'MPSC Rajyseva', 'UPSC CDS']
+import { apiClient } from '@/lib/api-client'
 
 export default function MockTestsPage() {
   const router = useRouter()
@@ -16,11 +17,23 @@ export default function MockTestsPage() {
   const { data: subjects = [] } = useSubjects()
   const generateMutation = useGenerateMockTest()
 
-  const [exam, setExam] = useState(EXAMS[0])
+  const [exams, setExams] = useState<string[]>([])
+  const [exam, setExam] = useState('')
   const [subjectId, setSubjectId] = useState('')
   const [questionCount, setQuestionCount] = useState(20)
   const [mode, setMode] = useState<'custom' | 'weak_area'>('custom')
   const [error, setError] = useState<string | null>(null)
+
+  // Fetch live exams
+  useEffect(() => {
+    apiClient('/api/v1/analytics/exams')
+      .then(res => res.json())
+      .then(data => {
+        setExams(data)
+        if (data.length > 0) setExam(data[0])
+      })
+      .catch(err => console.error("Failed to fetch exams:", err))
+  }, [])
 
   // Treat as free unless user has premium or admin role in app_metadata
   const isFree = user?.app_metadata?.role !== 'admin' && user?.app_metadata?.subscription_status !== 'premium'
@@ -55,7 +68,8 @@ export default function MockTestsPage() {
         <div className="space-y-2">
           <label className="text-sm font-semibold">Exam</label>
           <div className="flex flex-wrap gap-2">
-            {EXAMS.map(e => (
+            {exams.length === 0 && <span className="text-sm text-muted-foreground animate-pulse">Loading exams...</span>}
+            {exams.map(e => (
               <button
                 key={e}
                 onClick={() => setExam(e)}
@@ -169,17 +183,17 @@ export default function MockTestsPage() {
           </div>
         )}
 
-        <button
+        <MagneticButton
           onClick={handleGenerate}
-          disabled={generateMutation.isPending || !subjectId}
-          className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-all active:scale-[0.99]"
+          className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-all shadow-md shadow-primary/20 hover:shadow-lg"
+          style={{ opacity: generateMutation.isPending || !subjectId ? 0.5 : 1, pointerEvents: generateMutation.isPending || !subjectId ? 'none' : 'auto' }}
         >
           {generateMutation.isPending ? (
             <><span className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" /> Generating…</>
           ) : (
             <>Generate Mock Test <ChevronRight className="h-4 w-4" /></>
           )}
-        </button>
+        </MagneticButton>
       </div>
     </div>
   )

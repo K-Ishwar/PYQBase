@@ -21,6 +21,13 @@ class SubjectHeatmapResponse(BaseModel):
     topics: List[TopicHeatmapData]
 
 
+class ExamStatsResponse(BaseModel):
+    exam: str
+    total_questions: int
+    available_years: List[int]
+
+
+
 @router.get("/heatmaps/{subject_id}", response_model=SubjectHeatmapResponse)
 async def get_subject_heatmap(
     subject_id: UUID,
@@ -68,3 +75,72 @@ async def get_subject_heatmap(
         subject_name=subject_name,
         topics=topics
     )
+
+
+@router.get("/exams", response_model=List[str])
+async def get_all_exams(
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Returns a list of all distinct exams currently in the database.
+    """
+    from app.models.question import QuestionDb
+    from sqlalchemy import select
+    
+    stmt = select(QuestionDb.exam).distinct().where(QuestionDb.exam.isnot(None))
+    result = await db.execute(stmt)
+    exams = result.scalars().all()
+    return list(exams)
+
+
+@router.get("/exams/{exam_name}", response_model=ExamStatsResponse)
+async def get_exam_stats(
+    exam_name: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Returns live statistics for a specific exam:
+    - total number of questions
+    - available distinct years sorted descending
+    """
+    from app.models.question import QuestionDb
+    from sqlalchemy import select, func
+    
+    # Get total questions
+    count_stmt = select(func.count(QuestionDb.id)).where(QuestionDb.exam == exam_name)
+    total_questions = (await db.execute(count_stmt)).scalar() or 0
+    
+    # Get distinct years sorted descending
+    years_stmt = select(QuestionDb.year).where(QuestionDb.exam == exam_name).distinct().order_by(QuestionDb.year.desc())
+    years = (await db.execute(years_stmt)).scalars().all()
+    
+    return ExamStatsResponse(
+        exam=exam_name,
+        total_questions=total_questions,
+        available_years=list(years)
+    )
+
+@router.get("/exams/{exam_name}/subjects", response_model=List[str])
+async def get_exam_subjects(
+    exam_name: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Returns a list of subject names that have questions for a specific exam.
+    """
+    from app.models.question import QuestionDb
+    from app.models.taxonomy import SubtopicDb, TopicDb, SubjectDb
+    from sqlalchemy import select
+
+    stmt = (
+        select(SubjectDb.name)
+        .distinct()
+        .join(TopicDb, SubjectDb.id == TopicDb.subject_id)
+        .join(SubtopicDb, TopicDb.id == SubtopicDb.topic_id)
+        .join(QuestionDb, SubtopicDb.id == QuestionDb.subtopic_id)
+        .where(QuestionDb.exam == exam_name)
+    )
+    result = await db.execute(stmt)
+    subjects = result.scalars().all()
+    return list(subjects)
+
