@@ -72,8 +72,8 @@ export function Navbar() {
           
           {isAdmin && (
             <Link 
-              href="/admin/ingestion" 
-              className="hidden md:flex items-center gap-1.5 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary-foreground bg-primary/90 hover:bg-primary rounded-full transition-colors"
+              href="/admin" 
+              className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary-foreground bg-primary/90 hover:bg-primary rounded-full transition-colors"
             >
               Admin
             </Link>

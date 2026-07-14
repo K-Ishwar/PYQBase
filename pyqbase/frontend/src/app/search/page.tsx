@@ -141,17 +141,28 @@ function SearchContent() {
           )}
 
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
-              Sort By
-            </p>
+            <div className="flex justify-between items-center mb-3">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                Sort By
+              </p>
+              {sort && (
+                <button
+                  onClick={() => setSort('')}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
             <div className="flex flex-col gap-2">
               {SORTS.map((s) => (
                 <button
                   key={s.value}
-                  onClick={() => setSort(s.value)}
+                  onClick={() => setSort(sort === s.value ? '' : s.value)}
                   className={pillClass(sort === s.value)}
                 >
                   {s.label}
+                  {sort === s.value && <span className="ml-1 opacity-60 hover:opacity-100">&times;</span>}
                 </button>
               ))}
             </div>

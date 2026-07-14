@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { apiClient } from "@/lib/api-client"
+import { QuestionTags } from "@/components/ui/QuestionTags"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Subject { id: string; name: string }
@@ -12,6 +13,7 @@ interface Question {
   question_number: number
   exam?: string
   year?: number
+  paper?: string
   header_context?: string
   raw_question_stem?: string
   raw_options?: Record<string, string>
@@ -59,6 +61,13 @@ export default function ReviewBatchPage() {
   const [publishing, setPublishing] = useState(false)
   const [bulkApproving, setBulkApproving] = useState(false)
   const [error, setError] = useState("")
+  const [duplicates, setDuplicates] = useState<any[]>([]) // Questions flagged as duplicates after publish
+
+  // Bulk update taxonomy state
+  const [bulkSubjectId, setBulkSubjectId] = useState("")
+  const [bulkTopicId, setBulkTopicId] = useState("")
+  const [bulkSubtopicId, setBulkSubtopicId] = useState("")
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false)
 
   // Taxonomy data — loaded once and cached
   const [subjects, setSubjects] = useState<Subject[]>([])
@@ -84,11 +93,9 @@ export default function ReviewBatchPage() {
       }
       if (qsRes.ok) {
         const data: Question[] = await qsRes.json()
-        if (data.length === 0) {
-          router.push("/admin/ingestion")
-        } else {
-          setQuestions(data)
-        }
+        // Don't redirect if empty — batch may still be parsing/inserting questions.
+        // Only redirect back if batch status is 'completed' or 'failed' AND no questions remain.
+        setQuestions(data)
       }
     } catch (err) {
       console.error("fetchBatchAndQuestions error:", err)
@@ -143,17 +150,18 @@ export default function ReviewBatchPage() {
     fetchAllTaxonomy()
   }, [])
 
-  // Poll while AI is processing
+  // Poll while AI is processing or while no questions have loaded yet
   useEffect(() => {
     if (pollRef.current) clearInterval(pollRef.current)
-    const isProcessing = batch?.status === "parsing" || batch?.status === "parsed"
+    const isProcessing = batch?.status === "parsing" || batch?.status === "parsed" || questions.length === 0
     if (isProcessing) {
-      pollRef.current = setInterval(fetchBatchAndQuestions, 5000)
+      // Poll every 3 seconds while parsing for faster feedback
+      pollRef.current = setInterval(fetchBatchAndQuestions, 3000)
     }
     return () => {
       if (pollRef.current) clearInterval(pollRef.current)
     }
-  }, [batch?.status])
+  }, [batch?.status, questions.length])
 
   // ── Background PATCH helper — optimistic UI ────────────────────────────────
   const patchQuestion = useCallback(async (id: string, updates: Partial<Question>) => {
@@ -197,26 +205,35 @@ export default function ReviewBatchPage() {
     patchQuestion(q.id, { topic_id: newTopicId || null, subtopic_id: null })
   }, [patchQuestion])
 
-  // ── Bulk approve ───────────────────────────────────────────────────────────
+  // ── Bulk approve — only questions with complete taxonomy ──────────────────
   const handleBulkApprove = useCallback(async () => {
     const toApprove = questions.filter(
-      q => q.review_status !== "approved" && q.review_status !== "rejected"
+      q => q.review_status !== "approved"
+        && q.review_status !== "rejected"
+        && q.subject_id && q.topic_id && q.subtopic_id // Must have full taxonomy
+    )
+    const missingTaxonomy = questions.filter(
+      q => q.review_status !== "approved"
+        && q.review_status !== "rejected"
+        && (!q.subject_id || !q.topic_id || !q.subtopic_id)
     )
     if (toApprove.length === 0) {
-      alert("No pending questions to approve.")
+      if (missingTaxonomy.length > 0) {
+        alert(`No questions can be bulk approved yet — ${missingTaxonomy.length} question(s) are missing Subject/Topic/Subtopic. Please categorize them first.`)
+      } else {
+        alert("No pending questions to approve.")
+      }
       return
     }
 
     setBulkApproving(true)
-
-    // Optimistic update all at once
+    // Optimistic update
     setQuestions(prev =>
       prev.map(q =>
         toApprove.find(ta => ta.id === q.id) ? { ...q, review_status: "approved" } : q
       )
     )
 
-    // Fire ONE bulk request instead of N individual ones
     try {
       const res = await apiClient(`/api/v1/admin/ingestion/staged/bulk-approve`, {
         method: "POST",
@@ -226,7 +243,10 @@ export default function ReviewBatchPage() {
         const data = await res.json().catch(() => ({}))
         throw new Error(data.detail || "Bulk approve failed")
       }
-      alert(`✓ Bulk approved ${toApprove.length} questions.`)
+      const skippedMsg = missingTaxonomy.length > 0
+        ? ` (${missingTaxonomy.length} skipped — missing taxonomy)`
+        : ""
+      alert(`✓ Bulk approved ${toApprove.length} questions.${skippedMsg}`)
     } catch (err: any) {
       console.error("Bulk approve error:", err)
       alert(`Error: ${err.message}. Please refresh and try again.`)
@@ -235,6 +255,52 @@ export default function ReviewBatchPage() {
     }
   }, [questions])
 
+  // ── Bulk update taxonomy ──────────────────────────────────────────────────
+  const handleBulkUpdateTaxonomy = useCallback(async () => {
+    const pendingIds = questions
+      .filter(q => q.review_status !== "approved" && q.review_status !== "rejected")
+      .map(q => q.id)
+    
+    if (pendingIds.length === 0) return alert("No pending questions to update.")
+    if (!bulkSubjectId) return alert("Select at least a Subject to apply.")
+
+    setIsBulkUpdating(true)
+    // Optimistic
+    setQuestions(prev => prev.map(q => {
+      if (pendingIds.includes(q.id)) {
+        return {
+          ...q,
+          subject_id: bulkSubjectId || q.subject_id,
+          topic_id: bulkTopicId || (bulkSubjectId ? null : q.topic_id),
+          subtopic_id: bulkSubtopicId || (bulkTopicId ? null : q.subtopic_id)
+        }
+      }
+      return q
+    }))
+
+    try {
+      const res = await apiClient(`/api/v1/admin/ingestion/staged/bulk-update`, {
+        method: "POST",
+        body: JSON.stringify({
+          ids: pendingIds,
+          subject_id: bulkSubjectId || null,
+          topic_id: bulkTopicId || null,
+          subtopic_id: bulkSubtopicId || null
+        })
+      })
+      if (!res.ok) throw new Error("Bulk update failed")
+      alert(`Applied taxonomy to ${pendingIds.length} pending questions.`)
+      // reset bulk states
+      setBulkSubjectId("")
+      setBulkTopicId("")
+      setBulkSubtopicId("")
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setIsBulkUpdating(false)
+    }
+  }, [questions, bulkSubjectId, bulkTopicId, bulkSubtopicId])
+
   // ── Publish ────────────────────────────────────────────────────────────────
   const handlePublish = useCallback(async () => {
     setPublishing(true)
@@ -242,13 +308,26 @@ export default function ReviewBatchPage() {
     try {
       const res = await apiClient(`/api/v1/admin/ingestion/batches/${batch_id}/publish`, {
         method: "POST",
+        body: JSON.stringify({ force_publish_ids: [] })
       })
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.detail || "Failed to publish")
       }
       const data = await res.json()
-      alert(`✓ Successfully published ${data.published_count} questions!`)
+
+      // Show duplicates panel if any were found
+      if (data.duplicates && data.duplicates.length > 0) {
+        setDuplicates(data.duplicates)
+      }
+
+      const msg = [
+        data.published_count > 0 ? `✓ Published ${data.published_count} questions.` : null,
+        data.duplicates?.length > 0 ? `⚠ ${data.duplicates.length} duplicates detected — review below.` : null,
+        data.invalid?.length > 0 ? `⚠ ${data.invalid.length} questions missing taxonomy/answer — fix and re-approve.` : null,
+      ].filter(Boolean).join("\n")
+      
+      if (msg) alert(msg)
       fetchBatchAndQuestions()
     } catch (err: any) {
       setError(err.message)
@@ -274,6 +353,27 @@ export default function ReviewBatchPage() {
     )
   }
   if (!batch) return <div className="p-10 text-center text-red-500">Batch not found</div>
+
+  // Still waiting for questions to be parsed and inserted
+  if (questions.length === 0) {
+    return (
+      <div className="p-10 flex flex-col items-center gap-6 text-center">
+        <div className="animate-spin w-10 h-10 border-4 border-primary border-t-transparent rounded-full" />
+        <div>
+          <h2 className="text-xl font-bold mb-2">Parsing your file...</h2>
+          <p className="text-muted-foreground">
+            Batch status: <span className="font-semibold uppercase">{batch?.status}</span>
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">Questions will appear here automatically once extraction is complete.</p>
+        </div>
+        {batch?.error_log && (
+          <div className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 text-sm max-w-lg text-left">
+            <strong>Error:</strong> {batch.error_log}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -327,10 +427,158 @@ export default function ReviewBatchPage() {
         </div>
       )}
 
+      {/* ── Bulk Taxonomy Update Panel ── */}
+      {taxonomyReady && pendingCount > 0 && (
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-800 mb-3">⚡ Bulk Apply Taxonomy to Pending Questions</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">Subject</label>
+              <select
+                className="w-full text-sm p-2 border rounded-lg bg-background"
+                value={bulkSubjectId}
+                onChange={(e) => {
+                  setBulkSubjectId(e.target.value)
+                  setBulkTopicId("")
+                  setBulkSubtopicId("")
+                }}
+              >
+                <option value="">— Select —</option>
+                {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">Topic</label>
+              <select
+                className="w-full text-sm p-2 border rounded-lg bg-background disabled:opacity-50"
+                value={bulkTopicId}
+                disabled={!bulkSubjectId}
+                onChange={(e) => {
+                  setBulkTopicId(e.target.value)
+                  setBulkSubtopicId("")
+                }}
+              >
+                <option value="">— Select —</option>
+                {(topicsMap[bulkSubjectId] || []).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">Subtopic</label>
+              <select
+                className="w-full text-sm p-2 border rounded-lg bg-background disabled:opacity-50"
+                value={bulkSubtopicId}
+                disabled={!bulkTopicId}
+                onChange={(e) => setBulkSubtopicId(e.target.value)}
+              >
+                <option value="">— Select —</option>
+                {(subtopicsMap[bulkTopicId] || []).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+            <button
+              onClick={handleBulkUpdateTaxonomy}
+              disabled={!bulkSubjectId || isBulkUpdating}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium transition-colors w-full"
+            >
+              {isBulkUpdating ? "Applying..." : "Apply to All Pending"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Error ── */}
       {error && (
         <div className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 whitespace-pre-wrap text-sm">
           <strong>Error:</strong> {error}
+        </div>
+      )}
+
+      {/* ── Duplicates Panel ── */}
+      {duplicates.length > 0 && (
+        <div className="bg-amber-50 border border-amber-300 rounded-xl p-5 space-y-3">
+          <div className="flex justify-between items-center gap-3 flex-wrap">
+            <div>
+              <h3 className="font-bold text-amber-900">⚠️ {duplicates.length} Duplicate Question{duplicates.length > 1 ? 's' : ''} Found</h3>
+              <p className="text-sm text-amber-700 mt-0.5">These already exist in the database. Discard them or keep for manual review.</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  if (!confirm(`Discard all ${duplicates.length} duplicate questions?`)) return
+                  try {
+                    await apiClient(`/api/v1/admin/ingestion/staged/bulk-reject`, {
+                      method: "POST",
+                      body: JSON.stringify({ ids: duplicates.map((d: any) => d.id) }),
+                    })
+                    setDuplicates([])
+                    setQuestions(prev => prev.map(q =>
+                      duplicates.find((d: any) => d.id === q.id) ? { ...q, review_status: "rejected" } : q
+                    ))
+                  } catch { alert("Failed to reject duplicates") }
+                }}
+                className="px-3 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-sm font-medium"
+              >
+                Discard All
+              </button>
+              <button onClick={() => setDuplicates([])} className="px-3 py-1.5 bg-amber-100 text-amber-700 hover:bg-amber-200 rounded-lg text-sm font-medium">
+                Dismiss
+              </button>
+            </div>
+          </div>
+          <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+            {duplicates.map((d: any) => (
+              <div key={d.id} className="flex justify-between items-start bg-white border border-amber-200 rounded-lg p-3 gap-3">
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs font-bold text-amber-800 mr-2">Q{d.question_number}</span>
+                  <span className="text-sm text-gray-700 line-clamp-2">{d.raw_question_stem}</span>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={async () => {
+                      try {
+                        // Set to approved first
+                        await apiClient(`/api/v1/admin/ingestion/staged/${d.id}`, {
+                          method: "PATCH",
+                          body: JSON.stringify({ review_status: "approved" }),
+                        })
+                        // Then force publish
+                        const res = await apiClient(`/api/v1/admin/ingestion/batches/${batch_id}/publish`, {
+                          method: "POST",
+                          body: JSON.stringify({ force_publish_ids: [d.id] })
+                        })
+                        if (!res.ok) {
+                          const errData = await res.json()
+                          throw new Error(errData.detail || "Failed to force publish")
+                        }
+                        alert("Forced publish successful.")
+                        setDuplicates(prev => prev.filter((x: any) => x.id !== d.id))
+                        fetchBatchAndQuestions()
+                      } catch (err: any) { 
+                        alert(err.message || "Failed to force publish") 
+                      }
+                    }}
+                    className="px-2 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded text-xs font-medium"
+                  >
+                    Force Publish
+                  </button>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await apiClient(`/api/v1/admin/ingestion/staged/${d.id}`, {
+                          method: "PATCH",
+                          body: JSON.stringify({ review_status: "rejected" }),
+                        })
+                        setDuplicates(prev => prev.filter((x: any) => x.id !== d.id))
+                        setQuestions(prev => prev.map(q => q.id === d.id ? { ...q, review_status: "rejected" } : q))
+                      } catch { alert("Failed to reject") }
+                    }}
+                    className="px-2 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded text-xs font-medium"
+                  >
+                    Discard
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -362,23 +610,36 @@ export default function ReviewBatchPage() {
                   <span className="font-bold text-base">Q{q.question_number}</span>
                   <ConfidenceBadge score={q.parse_confidence} />
                   <StatusBadge status={q.review_status} />
-                  {(q.year || q.exam) && (
-                    <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 font-medium">
-                      {q.exam} {q.year}
-                    </span>
-                  )}
+                  <QuestionTags
+                    exam={q.exam || batch?.exam || ''}
+                    year={q.year || batch?.year || 0}
+                    paper={q.paper || batch?.paper || ''}
+                  />
                   {isSaving && (
                     <span className="text-xs text-muted-foreground italic">saving...</span>
                   )}
                 </div>
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => patchQuestion(q.id, { review_status: "approved" })}
-                    disabled={isApproved}
-                    className="px-3 py-1.5 bg-green-100 text-green-800 hover:bg-green-200 rounded-lg text-sm font-medium disabled:opacity-40 transition-colors"
-                  >
-                    ✓ Approve
-                  </button>
+                  {/* Approve requires full taxonomy */}
+                  {(() => {
+                    const canApprove = !!(q.subject_id && q.topic_id && q.subtopic_id && q.correct_option)
+                    return (
+                      <div className="relative group">
+                        <button
+                          onClick={() => patchQuestion(q.id, { review_status: "approved" })}
+                          disabled={isApproved || !canApprove}
+                          className="px-3 py-1.5 bg-green-100 text-green-800 hover:bg-green-200 rounded-lg text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          ✓ Approve
+                        </button>
+                        {!canApprove && !isApproved && (
+                          <div className="absolute bottom-full left-0 mb-1 w-48 bg-gray-900 text-white text-xs rounded-lg px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                            {!q.subject_id ? "Select Subject first" : !q.topic_id ? "Select Topic first" : !q.subtopic_id ? "Select Subtopic first" : "Select correct answer"}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
                   <button
                     onClick={() => patchQuestion(q.id, { review_status: "rejected" })}
                     className="px-3 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-sm font-medium transition-colors"

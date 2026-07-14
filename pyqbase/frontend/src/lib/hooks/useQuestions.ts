@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api-client'
-import { Question } from './useSearch' // Has the base Question type
 
 export interface QuestionDetailResponse {
   id: string
@@ -8,7 +7,7 @@ export interface QuestionDetailResponse {
   year: number
   paper?: string
   question_number?: number
-  question_stem: string
+  question_stem: string | { en: string }
   options: Record<string, string>
   question_type: string
   has_image: boolean
