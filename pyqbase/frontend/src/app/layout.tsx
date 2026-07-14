@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ReactQueryProvider } from "@/components/ReactQueryProvider";
@@ -12,6 +12,12 @@ const inter = Inter({
   variable: "--font-inter",
   display: "swap",
   fallback: ["system-ui", "arial"],
+});
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  variable: "--font-outfit",
+  display: "swap",
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -34,7 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+        className={`${inter.variable} ${jetbrainsMono.variable} ${outfit.variable} font-sans antialiased mesh-bg`}
       >
         <ThemeProvider
           attribute="class"

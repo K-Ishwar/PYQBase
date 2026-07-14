@@ -20,6 +20,7 @@ const config = {
     extend: {
       fontFamily: {
         sans: ['var(--font-inter)', 'sans-serif'],
+        display: ['var(--font-outfit)', 'sans-serif'],
         mono: ['var(--font-jetbrains-mono)', 'monospace'],
       },
       colors: {

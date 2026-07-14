@@ -1,4 +1,5 @@
 import * as React from "react"
+import { SpotlightCard } from "./SpotlightCard"
 
 
 interface ExamCardProps {
@@ -10,10 +11,11 @@ interface ExamCardProps {
 
 export function ExamCard({ icon, title, description, href = "#" }: ExamCardProps) {
   return (
-    <a
-      href={href}
-      className="group flex flex-col items-center p-6 rounded-2xl border bg-card text-card-foreground shadow-sm transition-all hover:scale-[1.02] hover:shadow-md hover:border-primary/30"
-    >
+    <SpotlightCard>
+      <a
+        href={href}
+        className="group flex flex-col items-center p-6 h-full w-full"
+      >
       <div className="mb-4 rounded-full bg-primary/5 p-4 text-primary">
         {icon}
       </div>
@@ -23,6 +25,7 @@ export function ExamCard({ icon, title, description, href = "#" }: ExamCardProps
       <p className="text-center text-sm text-muted-foreground">
         {description}
       </p>
-    </a>
+      </a>
+    </SpotlightCard>
   )
 }
