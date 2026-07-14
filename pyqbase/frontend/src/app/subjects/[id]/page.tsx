@@ -69,14 +69,22 @@ export default function SubjectHeatmapPage() {
         <Link href="/subjects" className="text-muted-foreground hover:text-foreground flex items-center gap-2 mb-4 text-sm w-fit transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to Subjects
         </Link>
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-primary/10 text-primary rounded-xl">
-            <Activity className="w-8 h-8" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-primary/10 text-primary rounded-xl">
+              <Activity className="w-8 h-8" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-extrabold tracking-tight">{data.subject_name}</h1>
+              <p className="text-muted-foreground">Historical Topic Heatmap & Weightage</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight">{data.subject_name}</h1>
-            <p className="text-muted-foreground">Historical Topic Heatmap & Weightage</p>
-          </div>
+          
+          <Link href={`/search?subject_id=${id}`}>
+            <button className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-xl font-bold hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20">
+              View All Questions
+            </button>
+          </Link>
         </div>
       </div>
 

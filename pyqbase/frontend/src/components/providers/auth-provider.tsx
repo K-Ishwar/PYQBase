@@ -42,12 +42,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
 
-  // Client-side onboarding enforcement (catches email verifications with hash fragments)
+  // Client-side onboarding and route protection
   useEffect(() => {
-    if (!isLoading && user) {
+    if (isLoading) return
+
+    if (user) {
       const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/onboarding') || pathname.startsWith('/admin')
       if (!isAuthRoute && user.user_metadata?.onboarding_completed !== true) {
         router.push('/onboarding')
+      }
+    } else {
+      // User is logged out
+      if (pathname.startsWith('/mock-tests')) {
+        router.push('/login')
       }
     }
   }, [user, isLoading, pathname, router])
