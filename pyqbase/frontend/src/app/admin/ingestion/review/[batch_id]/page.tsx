@@ -60,6 +60,7 @@ export default function ReviewBatchPage() {
   const [pageLoading, setPageLoading] = useState(true)
   const [publishing, setPublishing] = useState(false)
   const [bulkApproving, setBulkApproving] = useState(false)
+  const [isStartingAI, setIsStartingAI] = useState(false)
   const [error, setError] = useState("")
   const [duplicates, setDuplicates] = useState<any[]>([]) // Questions flagged as duplicates after publish
 
@@ -107,38 +108,27 @@ export default function ReviewBatchPage() {
   // Load all taxonomy upfront — subjects → all topics per subject → all subtopics per topic
   const fetchAllTaxonomy = useCallback(async () => {
     try {
-      const subRes = await apiClient("/api/v1/taxonomy/subjects")
-      if (!subRes.ok) return
-      const subList: Subject[] = await subRes.json()
-      setSubjects(subList)
+      const res = await apiClient("/api/v1/taxonomy/all")
+      if (!res.ok) return
+      
+      const data: { subjects: Subject[], topics: Topic[], subtopics: Subtopic[] } = await res.json()
+      
+      setSubjects(data.subjects)
 
-      // Fetch all topics for every subject in parallel
-      const topicResponses = await Promise.all(
-        subList.map(s => apiClient(`/api/v1/taxonomy/subjects/${s.id}/topics`))
-      )
       const newTopicsMap: Record<string, Topic[]> = {}
-      const allTopics: Topic[] = []
-      for (let i = 0; i < subList.length; i++) {
-        if (topicResponses[i].ok) {
-          const ts: Topic[] = await topicResponses[i].json()
-          newTopicsMap[subList[i].id] = ts
-          allTopics.push(...ts)
-        }
-      }
+      data.topics.forEach(t => {
+        if (!newTopicsMap[t.subject_id]) newTopicsMap[t.subject_id] = []
+        newTopicsMap[t.subject_id].push(t)
+      })
       setTopicsMap(newTopicsMap)
 
-      // Fetch all subtopics for every topic in parallel (deduplicated)
-      const subtopicResponses = await Promise.all(
-        allTopics.map(t => apiClient(`/api/v1/taxonomy/topics/${t.id}/subtopics`))
-      )
       const newSubtopicsMap: Record<string, Subtopic[]> = {}
-      for (let i = 0; i < allTopics.length; i++) {
-        if (subtopicResponses[i].ok) {
-          const ss: Subtopic[] = await subtopicResponses[i].json()
-          newSubtopicsMap[allTopics[i].id] = ss
-        }
-      }
+      data.subtopics.forEach(st => {
+        if (!newSubtopicsMap[st.topic_id]) newSubtopicsMap[st.topic_id] = []
+        newSubtopicsMap[st.topic_id].push(st)
+      })
       setSubtopicsMap(newSubtopicsMap)
+      
       setTaxonomyReady(true)
     } catch (err) {
       console.error("fetchAllTaxonomy error:", err)
@@ -257,17 +247,18 @@ export default function ReviewBatchPage() {
 
   // ── Bulk update taxonomy ──────────────────────────────────────────────────
   const handleBulkUpdateTaxonomy = useCallback(async () => {
-    const pendingIds = questions
+    const uncategorizedIds = questions
       .filter(q => q.review_status !== "approved" && q.review_status !== "rejected")
+      .filter(q => !q.subject_id || !q.topic_id || !q.subtopic_id)
       .map(q => q.id)
     
-    if (pendingIds.length === 0) return alert("No pending questions to update.")
+    if (uncategorizedIds.length === 0) return alert("No uncategorized questions to update.")
     if (!bulkSubjectId) return alert("Select at least a Subject to apply.")
 
     setIsBulkUpdating(true)
     // Optimistic
     setQuestions(prev => prev.map(q => {
-      if (pendingIds.includes(q.id)) {
+      if (uncategorizedIds.includes(q.id)) {
         return {
           ...q,
           subject_id: bulkSubjectId || q.subject_id,
@@ -282,14 +273,14 @@ export default function ReviewBatchPage() {
       const res = await apiClient(`/api/v1/admin/ingestion/staged/bulk-update`, {
         method: "POST",
         body: JSON.stringify({
-          ids: pendingIds,
+          ids: uncategorizedIds,
           subject_id: bulkSubjectId || null,
           topic_id: bulkTopicId || null,
           subtopic_id: bulkSubtopicId || null
         })
       })
       if (!res.ok) throw new Error("Bulk update failed")
-      alert(`Applied taxonomy to ${pendingIds.length} pending questions.`)
+      alert(`Applied taxonomy to ${uncategorizedIds.length} uncategorized questions.`)
       // reset bulk states
       setBulkSubjectId("")
       setBulkTopicId("")
@@ -300,6 +291,28 @@ export default function ReviewBatchPage() {
       setIsBulkUpdating(false)
     }
   }, [questions, bulkSubjectId, bulkTopicId, bulkSubtopicId])
+
+  // ── Run AI Categorization ─────────────────────────────────────────────────
+  const handleRunAI = useCallback(async () => {
+    if (!confirm("Start AI categorization for perfectly structured questions?")) return;
+    setIsStartingAI(true)
+    try {
+      const res = await apiClient(`/api/v1/admin/ingestion/batches/${batch_id}/run-ai`, {
+        method: "POST"
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.detail || "Failed to start AI")
+      }
+      alert("AI Categorization started! It will process in the background.")
+      // Fetch right away to update the batch status
+      fetchBatchAndQuestions()
+    } catch (err: any) {
+      alert(`Error: ${err.message}`)
+    } finally {
+      setIsStartingAI(false)
+    }
+  }, [batch_id, fetchBatchAndQuestions])
 
   // ── Publish ────────────────────────────────────────────────────────────────
   const handlePublish = useCallback(async () => {
@@ -394,6 +407,15 @@ export default function ReviewBatchPage() {
           </p>
         </div>
         <div className="flex gap-3 flex-wrap">
+          {batch?.status === "parsed" && (
+            <button
+              onClick={handleRunAI}
+              disabled={isStartingAI}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 text-sm font-medium transition-colors"
+            >
+              {isStartingAI ? "Starting AI..." : "Run AI Categorization"}
+            </button>
+          )}
           <button
             onClick={handleBulkApprove}
             disabled={bulkApproving || publishing || pendingCount === 0}
@@ -430,7 +452,7 @@ export default function ReviewBatchPage() {
       {/* ── Bulk Taxonomy Update Panel ── */}
       {taxonomyReady && pendingCount > 0 && (
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-sm">
-          <h3 className="text-sm font-bold text-slate-800 mb-3">⚡ Bulk Apply Taxonomy to Pending Questions</h3>
+          <h3 className="text-sm font-bold text-slate-800 mb-3">⚡ Bulk Apply Taxonomy to Uncategorized Questions</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">Subject</label>
@@ -479,7 +501,7 @@ export default function ReviewBatchPage() {
               disabled={!bulkSubjectId || isBulkUpdating}
               className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium transition-colors w-full"
             >
-              {isBulkUpdating ? "Applying..." : "Apply to All Pending"}
+              {isBulkUpdating ? "Applying..." : "Apply to Uncategorized"}
             </button>
           </div>
         </div>

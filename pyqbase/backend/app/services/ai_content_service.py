@@ -38,7 +38,7 @@ BATCH_CHUNK_SIZE = 10
 
 
 @retry(
-    wait=wait_exponential(multiplier=30, min=30, max=120),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
     stop=stop_after_attempt(3),
     retry=retry_if_exception_type((groq.RateLimitError, groq.APIStatusError)),
     reraise=True,
@@ -68,25 +68,24 @@ async def call_groq_with_retry(
 # This replaces sequential per-question calls and is ~30x faster.
 # ─────────────────────────────────────────────────────────────────────────────
 
-_BATCH_SYSTEM_PROMPT = """You are an expert academic classification system for Indian competitive exams (UPSC CSE, UPSC CAPF, MPSC, UPSC CDS, etc.).
+_BATCH_SYSTEM_PROMPT = """You are an expert academic classification system for competitive exams.
 
-Given a list of multiple-choice questions and the exam context, classify EACH question into subject, topic, and subtopic.
+Given a list of multiple-choice questions and the exam context, classify EACH question into a subject and topic.
 
 Rules:
-- Use the allowed taxonomy below. Choose the closest existing subject and topic.
-- You may create a new subtopic string if none fits.
+- The "subject" MUST be strictly selected from the following list ONLY: History, Geography, Polity, Economy, Science, Biology, Physics, Chemistry, Environment, Current Affairs, Art and Culture, Agriculture, Defence, International Relations, Governance, Ethics, Disaster Management, Internal Security, Mathematics, Reasoning, English, Hindi, Marathi, Computer, Statistics, Data Interpretation, Logical Reasoning, General Awareness, Miscellaneous.
+- Generate a specific topic based on standard academic curriculums.
 - Return a JSON object with key "results" containing an array, one entry per question.
-- Each entry MUST have: "q" (question number), "subject", "topic", "subtopic"
+- Each entry MUST have: "q" (question number), "subject", "topic"
+- The "q" field MUST exactly match the integer number provided in the 'Q#' prefix of each question (e.g., if the question starts with Q35:, the "q" field must be 35).
+- Every question MUST have a subject and topic. DO NOT leave them blank, null, or empty.
 - Do NOT skip any questions. Do NOT add extra fields.
-
-Allowed Taxonomy:
-{taxonomy_context}
 
 Output format (strict JSON):
 {
   "results": [
-    {"q": 1, "subject": "History", "topic": "Ancient India", "subtopic": "Maurya Empire"},
-    {"q": 2, "subject": "Science", "topic": "Physics", "subtopic": "Laws of Motion"}
+    {"q": 35, "subject": "History", "topic": "Ancient India"},
+    {"q": 36, "subject": "Science", "topic": "Physics"}
   ]
 }"""
 
@@ -94,11 +93,10 @@ Output format (strict JSON):
 async def enrich_batch_chunk(
     questions: List[StagedQuestionDb],
     batch: IngestionBatchDb,
-    taxonomy_context: str,
 ) -> Dict[int, Dict[str, str]]:
     """
     Send a chunk of questions to Groq in a single call.
-    Returns a dict mapping question_number -> {subject, topic, subtopic}.
+    Returns a dict mapping question_number -> {subject, topic}.
     Only sends the question STEM (not options) to keep tokens minimal.
     """
     lines = [f"Exam: {batch.exam}"]
@@ -109,10 +107,10 @@ async def enrich_batch_chunk(
         lines.append(f"Q{q.question_number}: {stem}")
     user_msg = "\n".join(lines)
 
-    sys_prompt = _BATCH_SYSTEM_PROMPT.replace("{taxonomy_context}", taxonomy_context)
+    sys_prompt = _BATCH_SYSTEM_PROMPT
 
-    # ~30 tokens output per question
-    max_output_tokens = len(questions) * 35 + 100
+    # ~80 tokens output per question (long subject/topic names need more budget)
+    max_output_tokens = len(questions) * 85 + 150
 
     content = await call_groq_with_retry(
         [
@@ -130,9 +128,8 @@ async def enrich_batch_chunk(
         q_num = item.get("q")
         if q_num is not None:
             mapping[int(q_num)] = {
-                "subject": item.get("subject", "Uncategorized"),
-                "topic": item.get("topic", "General"),
-                "subtopic": item.get("subtopic", "Miscellaneous"),
+                "subject": item.get("subject") or "Uncategorized",
+                "topic": item.get("topic") or "General",
             }
     return mapping
 
@@ -156,17 +153,9 @@ async def enrich_batch(batch_id: UUID):
 
             logger.info(f"[enrich_batch] {len(questions)} questions to enrich")
 
-            # ── Fetch existing taxonomy tree to guide AI ──
-            subjects = await taxonomy_repo.list_subjects(db)
-            taxonomy_tree = {}
-            for s in subjects:
-                topics = await taxonomy_repo.list_topics(db, s.id)
-                taxonomy_tree[s.name] = [t.name for t in topics]
-            taxonomy_context = json.dumps(taxonomy_tree, indent=2)
-
             # ── Filter: only process questions with sufficient confidence ──
-            processable = [q for q in questions if (q.parse_confidence or 0) >= 0.50]
-            skipped = [q for q in questions if (q.parse_confidence or 0) < 0.50]
+            processable = [q for q in questions if (q.parse_confidence or 0) >= 0.90]
+            skipped = [q for q in questions if (q.parse_confidence or 0) < 0.90]
             logger.info(f"[enrich_batch] {len(processable)} processable, {len(skipped)} skipped (low confidence)")
 
             # ── Chunk into groups to stay within token limits ──
@@ -180,7 +169,7 @@ async def enrich_batch(batch_id: UUID):
             for chunk_idx, chunk in enumerate(chunks):
                 logger.info(f"[enrich_batch] Calling Groq for chunk {chunk_idx + 1}/{len(chunks)} ({len(chunk)} questions)")
                 try:
-                    chunk_mapping = await enrich_batch_chunk(chunk, batch, taxonomy_context)
+                    chunk_mapping = await enrich_batch_chunk(chunk, batch)
                     all_mappings.update(chunk_mapping)
                     logger.info(f"[enrich_batch] Chunk {chunk_idx + 1} done, got {len(chunk_mapping)} classifications")
                 except Exception as chunk_err:
@@ -190,20 +179,11 @@ async def enrich_batch(batch_id: UUID):
                     )
                     # Mark that chunk's questions as needing edit
                     for q in chunk:
-                        try:
-                            await ingestion_repo.update_staged_question(
-                                db,
-                                q.id,
-                                review_status=ReviewStatus.needs_edit,
-                                reviewer_notes=f"AI batch failed: {str(chunk_err)[:100]}",
-                            )
-                        except Exception:
-                            pass
+                        q.review_status = ReviewStatus.needs_edit
+                        q.reviewer_notes = f"AI batch failed: {str(chunk_err)[:100]}"
                     continue
 
-                # Small delay between chunks to avoid rate limiting
-                if chunk_idx < len(chunks) - 1:
-                    await asyncio.sleep(2)
+                # No sleep needed — Groq free tier allows bursts, only hits limits on huge batches
 
             # ── Apply taxonomy results to DB ──
             logger.info(f"[enrich_batch] Applying {len(all_mappings)} classifications to DB")
@@ -211,24 +191,17 @@ async def enrich_batch(batch_id: UUID):
             # Build a lookup dict for taxonomy names -> IDs (cache to avoid repeated DB calls)
             subject_cache: Dict[str, Any] = {}
             topic_cache: Dict[str, Any] = {}
-            subtopic_cache: Dict[str, Any] = {}
-
             for q in processable:
                 taxonomy = all_mappings.get(q.question_number)
                 if not taxonomy:
                     # Groq missed this question — mark for manual review
-                    await ingestion_repo.update_staged_question(
-                        db,
-                        q.id,
-                        review_status=ReviewStatus.needs_edit,
-                        reviewer_notes="AI did not classify this question — please categorize manually.",
-                    )
+                    q.review_status = ReviewStatus.needs_edit
+                    q.reviewer_notes = "AI did not classify this question — please categorize manually."
                     continue
 
                 try:
                     sub_name = taxonomy["subject"]
                     top_name = taxonomy["topic"]
-                    subtop_name = taxonomy["subtopic"]
 
                     # Use cache to avoid repeated DB upserts
                     if sub_name not in subject_cache:
@@ -240,33 +213,19 @@ async def enrich_batch(batch_id: UUID):
                         topic_cache[cache_key] = await taxonomy_repo.get_or_create_topic(db, subject.id, top_name)
                     topic = topic_cache[cache_key]
 
-                    subtopic_key = f"{top_name}::{subtop_name}"
-                    if subtopic_key not in subtopic_cache:
-                        subtopic_cache[subtopic_key] = await taxonomy_repo.get_or_create_subtopic(db, topic.id, subtop_name)
-                    subtopic = subtopic_cache[subtopic_key]
-
-                    await ingestion_repo.update_staged_question(
-                        db,
-                        q.id,
-                        subject_id=subject.id,
-                        topic_id=topic.id,
-                        subtopic_id=subtopic.id,
-                        review_status=ReviewStatus.pending,
-                    )
-                    logger.info(f"[enrich_batch] Q{q.question_number} → {sub_name} / {top_name} / {subtop_name}")
+                    q.subject_id = subject.id
+                    q.topic_id = topic.id
+                    q.review_status = ReviewStatus.pending
+                    logger.info(f"[enrich_batch] Q{q.question_number} → {sub_name} / {top_name}")
 
                 except Exception as apply_err:
                     logger.error(f"[enrich_batch] Failed to apply taxonomy for Q{q.question_number}: {apply_err}")
-                    try:
-                        await ingestion_repo.update_staged_question(
-                            db,
-                            q.id,
-                            review_status=ReviewStatus.needs_edit,
-                            reviewer_notes=f"Taxonomy apply error: {str(apply_err)[:100]}",
-                        )
-                    except Exception:
-                        pass
+                    q.review_status = ReviewStatus.needs_edit
+                    q.reviewer_notes = f"Taxonomy apply error: {str(apply_err)[:100]}"
 
+            # Commit all the ORM changes at once
+            await db.commit()
+            
             await ingestion_repo.update_batch_status(db, batch_id, IngestionStatus.reviewing)
             logger.info(f"[enrich_batch] Completed batch {batch_id}")
 

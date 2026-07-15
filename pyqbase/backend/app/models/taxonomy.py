@@ -21,12 +21,6 @@ class TopicDb(SQLModel, table=True):
     name: str
 
 
-class SubtopicDb(SQLModel, table=True):
-    __tablename__ = "subtopics"
-
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
-    topic_id: UUID = Field(foreign_key="topics.id")
-    name: str
 
 
 # ─── API Schemas ──────────────────────────────────────────────────────────────
@@ -50,11 +44,3 @@ class TopicResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class SubtopicCreate(BaseModel):
-    name: str
-
-class SubtopicResponse(BaseModel):
-    id: UUID
-    topic_id: UUID
-    name: str
-    model_config = {"from_attributes": True}

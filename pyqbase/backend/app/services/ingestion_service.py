@@ -98,11 +98,9 @@ async def process_ingestion_batch(batch_id: UUID, paper_path: str, answer_key_pa
             await ingestion_repo.update_batch_status(db, batch_id, IngestionStatus.failed, error_log=error_msg)
             return
 
-    # 5. Trigger AI Enrichment as a fully independent task.
-    # This is intentionally NOT awaited so it runs concurrently and is
-    # NOT cancelled if this parent coroutine ends.
-    logger.info(f"Scheduling AI enrichment task for batch {batch_id}")
-    asyncio.create_task(enrich_batch(batch_id))
+    # AI Enrichment is no longer triggered automatically.
+    # It must be triggered manually via the POST /batches/{batch_id}/run-ai API endpoint.
+    logger.info(f"Batch {batch_id} parsing complete. Waiting for manual AI enrichment trigger.")
 
 
 def parse_markdown_paper(batch_id: UUID, paper_path: str) -> List[StagedQuestionDb]:

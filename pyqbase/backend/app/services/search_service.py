@@ -75,7 +75,7 @@ async def search_questions(
     Full-text search across questions using Postgres ts_rank.
     - Uses websearch_to_tsquery when q is given (handles "El Nino"-style queries).
     - Falls back to listing all (no FTS filter) when q is empty.
-    - Filters by exam, subject_id (via subtopic→topic→subject join), topic_id.
+    - Filters by exam, subject_id (via topic→subject join), topic_id.
     - Paginates with offset.
     - correct_option and options columns are NOT selected — enforced at SQL level.
     """
@@ -99,10 +99,9 @@ async def search_questions(
             q.question_type,
             q.has_image,
             q.image_url,
-            q.subtopic_id,
+            q.topic_id,
             q.elo_rating,
             q.created_at,
-            st.name AS subtopic_name,
             t.name AS topic_name,
             s.name AS subject_name
             {rank_col}
@@ -125,8 +124,7 @@ async def search_questions(
     params: dict = {"limit": limit, "offset": offset}
     rank_col = ""
     joins = """
-        LEFT JOIN subtopics st ON q.subtopic_id = st.id
-        LEFT JOIN topics t ON st.topic_id = t.id
+        LEFT JOIN topics t ON q.topic_id = t.id
         LEFT JOIN subjects s ON t.subject_id = s.id
     """
     filters = ""
@@ -150,7 +148,7 @@ async def search_questions(
         filters += " AND q.year = :year"
         params["year"] = year
 
-    # ── Subject / topic filters via subtopic join ──────────────────────────
+    # ── Subject / topic filters via topic join ──────────────────────────
     if topic_id:
         filters += " AND t.id = :topic_id"
         params["topic_id"] = topic_id
@@ -183,10 +181,9 @@ async def search_questions(
             question_type=row["question_type"],
             has_image=row["has_image"],
             image_url=row["image_url"],
-            subtopic_id=row["subtopic_id"],
+            topic_id=row["topic_id"],
             subject_name=row["subject_name"],
             topic_name=row["topic_name"],
-            subtopic_name=row["subtopic_name"],
             elo_rating=row["elo_rating"],
             ts_rank=float(row["ts_rank"]) if "ts_rank" in row.keys() and row["ts_rank"] is not None else None,
             created_at=row["created_at"],

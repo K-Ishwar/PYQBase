@@ -12,6 +12,6 @@ class StagedQuestionUpdate(BaseModel):
     ai_explanation: Optional[Dict[str, Any]] = None
     subject_id: Optional[UUID] = None
     topic_id: Optional[UUID] = None
-    subtopic_id: Optional[UUID] = None
+
     review_status: Optional[ReviewStatus] = None
     reviewer_notes: Optional[str] = None

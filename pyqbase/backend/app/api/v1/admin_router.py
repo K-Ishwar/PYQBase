@@ -12,8 +12,6 @@ from app.models.taxonomy import (
     SubjectCreate, SubjectResponse,
     TopicDb,
     TopicCreate, TopicResponse,
-    SubtopicDb,
-    SubtopicCreate, SubtopicResponse,
 )
 from app.models.audit_log import AuditLogDb
 from app.repositories import question_repo, taxonomy_repo
@@ -551,7 +549,7 @@ async def upsert_question(
         "year": question.year,
         "question_stem": question.question_stem,
         "correct_option": question.correct_option,
-        "subtopic_id": str(question.subtopic_id),
+        "topic_id": str(question.topic_id),
     }
 
     # Write immutable audit log
@@ -766,3 +764,21 @@ async def list_users(
         )
         for u in users
     ]
+
+@router.get("/test-query")
+async def test_query(db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import text
+    try:
+        # Get distinct taxonomy used by questions
+        res = await db.execute(text("""
+            SELECT q.subject_id, s.name as subject, q.topic_id, t.name as topic, q.subtopic_id, st.name as subtopic, COUNT(q.id) as q_count
+            FROM questions q
+            LEFT JOIN subjects s ON q.subject_id = s.id
+            LEFT JOIN topics t ON q.topic_id = t.id
+            LEFT JOIN subtopics st ON q.subtopic_id = st.id
+            GROUP BY q.subject_id, s.name, q.topic_id, t.name, q.subtopic_id, st.name
+            ORDER BY s.name
+        """))
+        return {"data": [dict(row._mapping) for row in res]}
+    except Exception as e:
+        return {"error": str(e)}

@@ -6,10 +6,14 @@ from app.core.config import settings
 # Note: PgBouncer transaction mode requires specific SQLAlchemy settings (pool_pre_ping=True)
 engine = create_async_engine(
     settings.async_database_url,
-    pool_size=20,
-    max_overflow=0,
+    pool_size=10,
+    max_overflow=5,
     pool_pre_ping=True,
-    echo=False
+    echo=False,
+    connect_args={
+        "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0,
+    }
 )
 
 # Create session factory

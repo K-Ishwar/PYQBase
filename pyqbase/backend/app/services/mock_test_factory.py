@@ -4,7 +4,7 @@ from uuid import UUID
 from typing import List
 
 from app.models.question import QuestionDb
-from app.models.taxonomy import SubtopicDb, TopicDb
+from app.models.taxonomy import TopicDb
 from app.models.user_progress import UserAttemptDb
 
 class MockTestFactory:
@@ -18,8 +18,7 @@ class MockTestFactory:
         """
         stmt = (
             select(QuestionDb.id)
-            .join(SubtopicDb, QuestionDb.subtopic_id == SubtopicDb.id)
-            .join(TopicDb, SubtopicDb.topic_id == TopicDb.id)
+            .join(TopicDb, QuestionDb.topic_id == TopicDb.id)
             .where(
                 and_(
                     QuestionDb.exam == exam,
@@ -41,8 +40,7 @@ class MockTestFactory:
         wrong_stmt = (
             select(QuestionDb.id)
             .join(UserAttemptDb, UserAttemptDb.question_id == QuestionDb.id)
-            .join(SubtopicDb, QuestionDb.subtopic_id == SubtopicDb.id)
-            .join(TopicDb, SubtopicDb.topic_id == TopicDb.id)
+            .join(TopicDb, QuestionDb.topic_id == TopicDb.id)
             .where(
                 and_(
                     UserAttemptDb.user_id == self.user_id,
@@ -62,8 +60,7 @@ class MockTestFactory:
             remaining = limit - len(wrong_ids)
             fallback_stmt = (
                 select(QuestionDb.id)
-                .join(SubtopicDb, QuestionDb.subtopic_id == SubtopicDb.id)
-                .join(TopicDb, SubtopicDb.topic_id == TopicDb.id)
+                .join(TopicDb, QuestionDb.topic_id == TopicDb.id)
                 .where(
                     and_(
                         QuestionDb.exam == exam,

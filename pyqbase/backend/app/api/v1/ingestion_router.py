@@ -64,71 +64,98 @@ async def upload_paper(
     exam: str = Form(...),
     year: int = Form(...),
     paper_metadata: str = Form(..., alias="paper"),
-    paper_file: UploadFile = File(...),
+    paper_file: Optional[UploadFile] = File(None),
+    paper_text: Optional[str] = Form(None),
     answer_key_file: Optional[UploadFile] = File(None),
     db: AsyncSession = Depends(get_db),
     admin_user: UserDb = Depends(get_current_admin_user)
 ):
     """
-    Upload a question paper for bulk ingestion.
+    Upload a question paper for bulk ingestion (via file or raw text).
     """
     paper_path = None
     answer_key_path = None
+    source_filename = ""
     try:
         # Log the upload attempt
         logger.info(f"Upload attempt: exam={exam}, year={year}, paper={paper_metadata}, user={admin_user.email}")
         
-        # Validate file exists and has content
-        if not paper_file or not paper_file.filename:
+        # Validate that exactly one input is provided
+        if not paper_file and not paper_text:
             raise HTTPException(
                 status_code=400,
-                detail="Paper file is required"
+                detail="Either a paper file or manual text must be provided."
             )
-        
-        # Validate file extensions
-        allowed_extensions = {'.md', '.pdf', '.txt'}
-        paper_ext = os.path.splitext(paper_file.filename)[1].lower()
-        if paper_ext not in allowed_extensions:
+            
+        if paper_file and paper_text:
             raise HTTPException(
-                status_code=400, 
-                detail=f"Invalid paper file format '{paper_ext}'. Allowed formats: {', '.join(allowed_extensions)}"
+                status_code=400,
+                detail="Provide either a paper file or manual text, not both."
             )
+            
+        # Ensure upload directory exists
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        logger.info(f"Upload directory: {UPLOAD_DIR}")
         
+        import uuid
+        
+        if paper_text:
+            # Handle Manual Text Entry
+            source_filename = f"manual_entry_{uuid.uuid4().hex[:8]}.md"
+            paper_path = os.path.join(UPLOAD_DIR, source_filename)
+            logger.info(f"Saving manual text to: {paper_path}")
+            try:
+                with open(paper_path, "w", encoding="utf-8") as f:
+                    f.write(paper_text)
+            except Exception as e:
+                logger.error(f"Failed to save text file: {e}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to save text: {str(e)}"
+                )
+        else:
+            # Handle File Upload
+            source_filename = paper_file.filename
+            
+            # Validate file extensions
+            allowed_extensions = {'.md', '.pdf', '.txt'}
+            paper_ext = os.path.splitext(paper_file.filename)[1].lower()
+            if paper_ext not in allowed_extensions:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Invalid paper file format '{paper_ext}'. Allowed formats: {', '.join(allowed_extensions)}"
+                )
+            
+            paper_path = os.path.join(UPLOAD_DIR, paper_file.filename)
+            logger.info(f"Saving paper file to: {paper_path}")
+            
+            try:
+                with open(paper_path, "wb") as buffer:
+                    content = await paper_file.read()
+                    if not content:
+                        raise HTTPException(
+                            status_code=400,
+                            detail="Paper file is empty"
+                        )
+                    buffer.write(content)
+                logger.info(f"Paper file saved successfully ({len(content)} bytes)")
+            except Exception as e:
+                logger.error(f"Failed to save paper file: {e}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to save paper file: {str(e)}"
+                )
+            
+        answer_key_path = None
         if answer_key_file and answer_key_file.filename:
             answer_ext = os.path.splitext(answer_key_file.filename)[1].lower()
+            allowed_extensions = {'.md', '.pdf', '.txt'}
             if answer_ext not in allowed_extensions:
                 raise HTTPException(
                     status_code=400, 
                     detail=f"Invalid answer key file format '{answer_ext}'. Allowed formats: {', '.join(allowed_extensions)}"
                 )
-        
-        # Ensure upload directory exists
-        os.makedirs(UPLOAD_DIR, exist_ok=True)
-        logger.info(f"Upload directory: {UPLOAD_DIR}")
-        
-        # Save uploaded files temporarily
-        paper_path = os.path.join(UPLOAD_DIR, paper_file.filename)
-        logger.info(f"Saving paper file to: {paper_path}")
-        
-        try:
-            with open(paper_path, "wb") as buffer:
-                content = await paper_file.read()
-                if not content:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Paper file is empty"
-                    )
-                buffer.write(content)
-            logger.info(f"Paper file saved successfully ({len(content)} bytes)")
-        except Exception as e:
-            logger.error(f"Failed to save paper file: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to save paper file: {str(e)}"
-            )
             
-        answer_key_path = None
-        if answer_key_file and answer_key_file.filename:
             answer_key_path = os.path.join(UPLOAD_DIR, answer_key_file.filename)
             logger.info(f"Saving answer key file to: {answer_key_path}")
             try:
@@ -157,7 +184,7 @@ async def upload_paper(
                 exam=exam,
                 year=year,
                 paper=paper_metadata,
-                source_filename=paper_file.filename,
+                source_filename=source_filename,
                 answer_key_filename=answer_key_file.filename if answer_key_file else None
             )
             logger.info(f"Batch created successfully: {batch.id}")
@@ -209,6 +236,26 @@ async def upload_paper(
             status_code=500, 
             detail=f"Unexpected error during upload: {str(e)}\n\nPlease check backend logs for details."
         )
+
+from app.services.ai_content_service import enrich_batch
+
+@router.post("/batches/{batch_id}/run-ai")
+async def trigger_ai_categorization(
+    batch_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    admin_user: UserDb = Depends(get_current_admin_user)
+):
+    """
+    Manually triggers AI categorization for perfectly structured questions in a batch.
+    """
+    batch = await ingestion_repo.get_batch(db, batch_id)
+    if not batch:
+        raise HTTPException(status_code=404, detail="Batch not found")
+        
+    logger.info(f"Manually triggering AI enrichment for batch {batch_id}")
+    asyncio.create_task(enrich_batch(batch_id))
+    
+    return {"message": "AI Categorization started successfully"}
 
 
 @router.get("/batches/{batch_id}")

@@ -66,7 +66,6 @@ class StagedQuestionDb(SQLModel, table=True):
     
     subject_id: Optional[UUID] = Field(default=None, sa_column=Column(pgUUID(as_uuid=True), sa.ForeignKey("subjects.id", ondelete="SET NULL")))
     topic_id: Optional[UUID] = Field(default=None, sa_column=Column(pgUUID(as_uuid=True), sa.ForeignKey("topics.id", ondelete="SET NULL")))
-    subtopic_id: Optional[UUID] = Field(default=None, sa_column=Column(pgUUID(as_uuid=True), sa.ForeignKey("subtopics.id", ondelete="SET NULL")))
     
     parse_confidence: float = Field(nullable=False)
     lexical_similarity_score: Optional[float] = Field(default=None)

@@ -9,6 +9,8 @@ export default function IngestionUploadPage() {
   const [year, setYear] = useState(new Date().getFullYear())
   const [paper, setPaper] = useState("GS Paper 1")
   const [paperFile, setPaperFile] = useState<File | null>(null)
+  const [ingestionMode, setIngestionMode] = useState<"file" | "text">("file")
+  const [paperText, setPaperText] = useState("")
   const [answerKeyFile, setAnswerKeyFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState("")
@@ -17,8 +19,12 @@ export default function IngestionUploadPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!paperFile) {
+    if (ingestionMode === "file" && !paperFile) {
       setError("Please select a paper file.")
+      return
+    }
+    if (ingestionMode === "text" && !paperText.trim()) {
+      setError("Please enter the question paper text.")
       return
     }
 
@@ -30,7 +36,13 @@ export default function IngestionUploadPage() {
     formData.append("exam", exam)
     formData.append("year", year.toString())
     formData.append("paper", paper)
-    formData.append("paper_file", paperFile)
+    
+    if (ingestionMode === "file" && paperFile) {
+      formData.append("paper_file", paperFile)
+    } else if (ingestionMode === "text") {
+      formData.append("paper_text", paperText)
+    }
+
     if (answerKeyFile) {
       formData.append("answer_key_file", answerKeyFile)
     }
@@ -42,7 +54,9 @@ export default function IngestionUploadPage() {
         exam,
         year,
         paper,
-        paperFile: paperFile.name,
+        mode: ingestionMode,
+        paperFile: paperFile?.name,
+        textLength: paperText.length,
         answerKeyFile: answerKeyFile?.name
       })
 
@@ -244,15 +258,46 @@ export default function IngestionUploadPage() {
         </div>
 
         <div className="space-y-4 pt-4 border-t">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Question Paper File (MD or PDF)</label>
-            <div className="border-2 border-dashed rounded-lg p-6 text-center hover:bg-muted/50 cursor-pointer relative">
-              <input type="file" accept=".md,.pdf" onChange={(e) => setPaperFile(e.target.files?.[0] || null)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" required />
-              <div className="text-sm text-muted-foreground">
-                {paperFile ? <span className="text-primary font-medium">{paperFile.name}</span> : "Drag & Drop or Click to Select File"}
+          <div className="flex space-x-4 mb-4">
+            <button
+              type="button"
+              onClick={() => setIngestionMode("file")}
+              className={`px-4 py-2 text-sm font-medium rounded-md ${ingestionMode === "file" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+            >
+              Upload File
+            </button>
+            <button
+              type="button"
+              onClick={() => setIngestionMode("text")}
+              className={`px-4 py-2 text-sm font-medium rounded-md ${ingestionMode === "text" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}
+            >
+              Paste Text
+            </button>
+          </div>
+
+          {ingestionMode === "file" ? (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Question Paper File (MD or PDF)</label>
+              <div className="border-2 border-dashed rounded-lg p-6 text-center hover:bg-muted/50 cursor-pointer relative">
+                <input type="file" accept=".md,.pdf,.txt" onChange={(e) => setPaperFile(e.target.files?.[0] || null)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" required={ingestionMode === "file"} />
+                <div className="text-sm text-muted-foreground">
+                  {paperFile ? <span className="text-primary font-medium">{paperFile.name}</span> : "Drag & Drop or Click to Select File"}
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Paste Raw Questions</label>
+              <textarea 
+                value={paperText} 
+                onChange={(e) => setPaperText(e.target.value)} 
+                rows={10} 
+                className="w-full p-3 border rounded-md font-mono text-sm" 
+                placeholder="Paste your questions here..."
+                required={ingestionMode === "text"}
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Answer Key File (Optional)</label>

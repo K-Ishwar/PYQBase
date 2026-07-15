@@ -1,0 +1,1761 @@
+Comprehensive Art & Culture Taxonomy
+Architecture
+• Indus Valley Architecture
+• Buddhist Architecture
+• Jain Architecture
+• Temple Architecture
+○ Nagara
+○ Dravida
+○ Vesara
+• Indo-Islamic Architecture
+• Mughal Architecture
+• Colonial Architecture
+Sculpture
+• Harappan Sculpture
+• Mauryan Sculpture
+• Gandhara School
+• Mathura School
+• Amaravati School
+• Chola Bronzes
+Paintings
+• Prehistoric Paintings
+• Ajanta
+• Mughal Paintings
+• Rajput Paintings
+• Pahari Paintings
+Performing Arts
+• Classical Dances
+• Folk Dances
+• Classical Music
+• Hindustani Music
+• Carnatic Music
+• Folk Music
+• Puppetry
+• Theatre
+Literature
+• Vedic Literature
+• Buddhist Literature
+• Jain Literature
+• Sangam Literature
+• Sanskrit Literature
+Religion & Philosophy
+• Hinduism
+• Buddhism
+• Jainism
+• Sikhism
+• Bhakti Movement
+• Sufi Movement
+UNESCO Heritage
+• World Heritage Sites
+• Intangible Heritage
+Festivals
+• National Festivals
+• Religious Festivals
+• Tribal Festivals
+GI Tags
+Handicrafts
+Handloom
+
+Comprehensive Economy Taxonomy
+1. Basics of Economics
+• Meaning of Economics
+• Microeconomics
+• Macroeconomics
+• Positive vs Normative Economics
+• Economic Systems
+○ Capitalism
+○ Socialism
+○ Mixed Economy
+• Scarcity
+• Choice
+• Opportunity Cost
+• Production Possibility Curve
+• Demand
+• Supply
+• Market Equilibrium
+• Elasticity
+2. National Income
+• GDP
+• GNP
+• NDP
+• NNP
+• GVA
+• Per Capita Income
+• Nominal GDP
+• Real GDP
+• Base Year
+• GDP Deflator
+• Methods of Estimation
+3. Inflation
+• CPI
+• WPI
+• Core Inflation
+• Headline Inflation
+• Deflation
+• Stagflation
+• Disinflation
+4. Banking
+• Functions of RBI
+• Scheduled Banks
+• Commercial Banks
+• Cooperative Banks
+• Small Finance Banks
+• Payment Banks
+• NBFCs
+5. Monetary Policy
+• Repo Rate
+• Reverse Repo
+• SDF
+• MSF
+• Bank Rate
+• CRR
+• SLR
+• Open Market Operations
+• Liquidity Adjustment Facility
+• MPC
+6. Public Finance
+• Budget
+• Fiscal Policy
+• Revenue Deficit
+• Fiscal Deficit
+• Primary Deficit
+• Public Debt
+7. Taxation
+• Direct Tax
+• Indirect Tax
+• GST
+• Customs
+• Excise
+• Income Tax
+• Corporation Tax
+8. Financial Markets
+• Money Market
+• Capital Market
+• Stock Exchange
+• Bond Market
+• Mutual Funds
+• Insurance
+• Pension
+• Derivatives
+9. Regulators
+• RBI
+• SEBI
+• IRDAI
+• PFRDA
+• IFSCA
+10. External Sector
+• Balance of Payments
+• Current Account
+• Capital Account
+• Foreign Exchange
+• Exchange Rate
+• Forex Reserves
+• Convertibility
+• FEMA
+• FDI
+• FPI
+• External Commercial Borrowings
+• Trade Deficit
+• Current Account Deficit
+• WTO
+• Free Trade Agreements
+11. Agriculture & Rural Economy
+• Cropping Seasons
+• MSP
+• APMC
+• e-NAM
+• Agricultural Marketing
+• Irrigation
+• PM-KISAN
+• Crop Insurance
+• Food Processing
+• Dairy
+• Fisheries
+• Animal Husbandry
+12. Infrastructure
+• Energy
+• Roads
+• Railways
+• Ports
+• Airports
+• Logistics
+• Urban Infrastructure
+• Digital Infrastructure
+13. Industry
+• MSMEs
+• Make in India
+• PLI Scheme
+• Startup India
+• Ease of Doing Business
+14. Inclusive Growth
+• Poverty
+• Unemployment
+• Inequality
+• Human Development Index
+• Multidimensional Poverty
+• Financial Inclusion
+• Jan Dhan Yojana
+• MUDRA
+• SHGs
+• Skill India
+15. Sustainable Development
+• SDGs
+• Green Economy
+• Circular Economy
+• Carbon Markets
+• ESG
+• Climate Finance
+16. Reports & Institutions
+• Economic Survey
+• Union Budget
+• NITI Aayog
+• IMF
+• World Bank
+• ADB
+• AIIB
+• BRICS Bank
+• OECD
+
+Comprehensive Environment Taxonomy
+Ecology
+• Ecology Basics
+• Levels of Organization
+• Habitat
+• Niche
+• Population Ecology
+• Community Ecology
+• Ecological Succession
+• Ecotone
+• Ecological Pyramids
+• Food Chain
+• Food Web
+• Ecological Balance
+Ecosystem
+• Forest Ecosystem
+• Grassland Ecosystem
+• Desert Ecosystem
+• Aquatic Ecosystem
+• Wetland Ecosystem
+• Tundra Ecosystem
+• Energy Flow
+• Nutrient Cycles
+• Carbon Cycle
+• Nitrogen Cycle
+• Water Cycle
+Biodiversity
+• Genetic Diversity
+• Species Diversity
+• Ecosystem Diversity
+• Biodiversity Hotspots
+• Endemic Species
+• Keystone Species
+• Flagship Species
+• Umbrella Species
+• IUCN Red List
+• Invasive Species
+• Extinction
+Pollution
+• Air Pollution
+• Water Pollution
+• Soil Pollution
+• Noise Pollution
+• Thermal Pollution
+• Radioactive Pollution
+• Solid Waste
+• E-Waste
+• Biomedical Waste
+• Plastic Waste
+Climate Change
+• Global Warming
+• Greenhouse Effect
+• Carbon Sink
+• Carbon Credit
+• Net Zero
+Environmental Conservation
+• National Parks
+• Wildlife Sanctuaries
+• Biosphere Reserves
+• Ramsar Sites
+• Tiger Reserves
+• Elephant Reserves
+International Conventions
+• UNFCCC
+• Kyoto Protocol
+• Paris Agreement
+• CBD
+• CITES
+• Ramsar Convention
+• Montreal Protocol
+
+Comprehensive Geography Taxonomy
+Physical Geography
+1. Fundamentals of Geography
+• Nature of Geography
+• Branches of Geography
+• Physical Geography
+• Human Geography
+• Environmental Geography
+• Regional Geography
+• GIS & Remote Sensing
+• Cartography
+2. Origin & Evolution of the Earth
+• Big Bang Theory
+• Nebular Hypothesis
+• Planetesimal Hypothesis
+• Tidal Hypothesis
+• Modern Theory
+• Geological Time Scale
+3. Interior of the Earth
+• Crust
+• Mantle
+• Core
+• Seismic Waves
+○ P Waves
+○ S Waves
+○ Surface Waves
+• Discontinuities
+○ Conrad
+○ Mohorovicic (Moho)
+○ Gutenberg
+○ Lehmann
+4. Plate Tectonics
+• Continental Drift
+• Sea Floor Spreading
+• Plate Boundaries
+○ Divergent
+○ Convergent
+○ Transform
+• Major Plates
+• Minor Plates
+• Hotspots
+5. Earth Movements
+• Endogenic Forces
+• Exogenic Forces
+• Folding
+• Faulting
+• Earthquakes
+• Volcanoes
+• Tsunami
+6. Rocks
+• Igneous
+○ Intrusive
+○ Extrusive
+• Sedimentary
+• Metamorphic
+• Rock Cycle
+• Minerals
+7. Weathering
+• Physical
+• Chemical
+• Biological
+8. Mass Wasting
+• Landslides
+• Soil Creep
+• Rock Fall
+• Mudflow
+9. Geomorphic Processes
+River
+• Erosion
+• Transportation
+• Deposition
+• Landforms
+Glacier
+• Erosion
+• Depositional Features
+Wind
+• Erosional Features
+• Depositional Features
+Sea Waves
+• Coastal Erosion
+• Coastal Deposition
+Groundwater
+• Karst Topography
+10. Climatology
+• Atmosphere
+• Composition
+• Heat Budget
+• Insolation
+• Temperature Distribution
+• Pressure Belts
+• Planetary Winds
+• Local Winds
+• Jet Streams
+• Humidity
+• Clouds
+• Precipitation
+• Air Masses
+• Fronts
+• Cyclones
+• Anticyclones
+• Thunderstorms
+• Monsoon
+• El Niño
+• La Niña
+• Indian Ocean Dipole
+• Climate Change
+• Global Warming
+11. Oceanography
+• Ocean Bottom Relief
+• Ocean Temperature
+• Salinity
+• Ocean Currents
+• Tides
+• Waves
+• Coral Reefs
+• Marine Deposits
+• Marine Resources
+• Tsunami
+12. Biogeography
+• Biosphere
+• Ecosystem
+• Biomes
+• Biodiversity
+• Soil Formation
+• Soil Profile
+• Soil Types
+Indian Geography
+Physiography
+• Himalayas
+• Northern Plains
+• Peninsular Plateau
+• Indian Desert
+• Coastal Plains
+• Islands
+Drainage
+• Indus System
+• Ganga System
+• Brahmaputra System
+• East Flowing Rivers
+• West Flowing Rivers
+Climate of India
+• Southwest Monsoon
+• Northeast Monsoon
+• Seasons
+• Rainfall Distribution
+Natural Vegetation
+• Forest Types
+• Mangroves
+• Grasslands
+Wildlife
+• National Parks
+• Wildlife Sanctuaries
+• Biosphere Reserves
+• Ramsar Sites
+Soils
+• Alluvial
+• Black
+• Red
+• Laterite
+• Desert
+• Mountain
+• Peaty
+Agriculture
+• Cropping Seasons
+• Food Crops
+• Cash Crops
+• Plantation Crops
+• Irrigation
+• Green Revolution
+• White Revolution
+• Blue Revolution
+Mineral Resources of India
+• Coal
+• Lignite
+• Petroleum
+• Natural Gas
+• Iron Ore
+• Manganese
+• Bauxite
+• Copper
+• Gold
+• Uranium
+• Thorium
+• Limestone
+• Mica
+• Rare Earth Elements
+Energy Resources
+• Thermal Power
+• Hydroelectric Power
+• Nuclear Power
+• Solar Energy
+• Wind Energy
+• Biomass
+• Tidal Energy
+• Geothermal Energy
+• Green Hydrogen
+Industries
+• Iron & Steel
+• Cotton Textile
+• Jute
+• Sugar
+• Cement
+• Petrochemical
+• Fertilizer
+• Automobile
+• IT Industry
+• Pharma
+• MSMEs
+Industrial Regions
+• Mumbai-Pune
+• Chota Nagpur
+• Ahmedabad-Vadodara
+• Bengaluru
+• NCR
+Transport & Communication
+• Roads
+• Railways
+• Inland Waterways
+• Airways
+• Pipelines
+• Major Ports
+• Minor Ports
+• Dedicated Freight Corridors
+Human Geography
+• Population
+• Migration
+• Urbanization
+• Rural Settlements
+• Urban Settlements
+• Smart Cities
+World Geography
+Continents
+Oceans
+Major Rivers
+Mountain Ranges
+Plateaus
+Plains
+Deserts
+Islands
+Straits
+Gulfs
+Seas
+Lakes
+Volcanoes
+Earthquake Belts
+Climatic Regions
+Map-Based Geography
+• India Mapping
+• World Mapping
+• Important Passes
+• Mountain Peaks
+• Rivers
+• Lakes
+• Dams
+• Waterfalls
+• National Parks
+• Biosphere Reserves
+• UNESCO Sites
+• Capitals
+• International Borders
+• Latitude & Longitud
+
+Comprehensive History Taxonomy
+Ancient Indian History
+1. Historiography
+• Definition of History
+• Periodization of Indian History
+• Sources of History
+○ Archaeological Sources
+■ Excavations
+■ Exploration
+■ Stratigraphy
+■ Carbon Dating
+■ Inscriptions
+■ Ashokan Inscriptions
+■ Copper Plate Grants
+■ Temple Inscriptions
+■ Prashastis
+■ Coins
+■ Punch Marked Coins
+■ Indo-Greek Coins
+■ Gupta Coins
+■ Satavahana Coins
+■ Kushana Coins
+■ Seals
+■ Terracotta
+■ Pottery
+■ PGW
+■ NBPW
+■ BRW
+■ OCP
+■ Sculptures
+■ Paintings
+■ Monuments
+○ Literary Sources
+■ Religious Literature
+■ Vedas
+■ Rigveda
+■ Samaveda
+■ Yajurveda
+■ Atharvaveda
+■ Brahmanas
+■ Aranyakas
+■ Upanishads
+■ Vedangas
+■ Smritis
+■ Puranas
+■ Ramayana
+■ Mahabharata
+■ Buddhist Literature
+■ Tripitaka
+■ Jataka Tales
+■ Milinda Panha
+■ Jain Literature
+■ Agamas
+■ Kalpasutra
+■ Secular Literature
+■ Arthashastra
+■ Indica
+■ Rajatarangini
+■ Sangam Literature
+■ Mudrarakshasa
+■ Harshacharita
+■ Foreign Accounts
+■ Megasthenes
+■ Fa-Hien
+■ Hiuen Tsang
+■ I-Tsing
+■ Al-Biruni
+2. Prehistoric India
+• Paleolithic
+○ Lower
+○ Middle
+○ Upper
+• Mesolithic
+• Neolithic
+• Chalcolithic
+• Megalithic Culture
+• Important Sites
+○ Bhimbetka
+○ Hunsgi
+○ Burzahom
+○ Chirand
+○ Mehrgarh
+3. Indus Valley Civilization
+• Discovery
+• Chronology
+• Extent
+• Town Planning
+• Drainage
+• Granaries
+• Dockyard
+• Agriculture
+• Trade
+• Script
+• Religion
+• Art
+• Pottery
+• Seals
+• Weights and Measures
+• Important Sites
+○ Harappa
+○ Mohenjo-Daro
+○ Dholavira
+○ Lothal
+○ Kalibangan
+○ Banawali
+○ Rakhigarhi
+○ Chanhudaro
+○ Surkotada
+○ Ropar
+○ Alamgirpur
+• Decline Theories
+4. Vedic Age
+Early Vedic Period
+• Society
+• Economy
+• Polity
+• Religion
+• Literature
+Later Vedic Period
+• Janapadas
+• Varna System
+• Ashrama System
+• Agriculture
+• Assemblies
+• Women
+• Education
+5. Mahajanapadas
+• Sixteen Mahajanapadas
+• Rise of Magadha
+• Republics
+• Monarchies
+6. Religious Movements
+Buddhism
+• Buddha
+• Four Noble Truths
+• Eightfold Path
+• Councils
+• Hinayana
+• Mahayana
+• Vajrayana
+• Spread
+• Art
+• Literature
+Jainism
+• Tirthankaras
+• Mahavira
+• Doctrines
+• Councils
+• Digambara
+• Svetambara
+7. Mahajanapadas (Detailed)
+Sixteen Mahajanapadas
+• Anga
+• Magadha
+• Kashi
+• Kosala
+• Vajji
+• Malla
+• Chedi
+• Vatsa
+• Kuru
+• Panchala
+• Matsya
+• Surasena
+• Assaka
+• Avanti
+• Gandhara
+• Kamboja
+Rise of Magadha
+• Geographical Advantages
+• Iron Resources
+• Elephant Corps
+• River Network
+• Political Leadership
+8. Magadhan Dynasties
+Haryanka Dynasty
+• Bimbisara
+• Ajatashatru
+• Udayin
+Shishunaga Dynasty
+• Shishunaga
+• Kalashoka
+• Second Buddhist Council
+Nanda Dynasty
+• Mahapadma Nanda
+• Dhana Nanda
+• Administration
+• Economy
+• Military
+9. Persian & Greek Invasions
+Achaemenid Invasion
+• Cyrus
+• Darius I
+• Satrapy System
+Alexander's Invasion
+• Campaign Route
+• Battle of Hydaspes
+• Porus
+• Retreat
+• Impact on India
+10. Mauryan Empire
+Chandragupta Maurya
+• Rise
+• Conquests
+• Seleucid Treaty
+• Administration
+Bindusara
+• Expansion
+• Foreign Relations
+Ashoka
+• Kalinga War
+• Dhamma
+• Major Rock Edicts
+• Minor Rock Edicts
+• Pillar Edicts
+• Administration
+• Foreign Missions
+Mauryan Administration
+• Central Government
+• Provincial Administration
+• District Administration
+• Village Administration
+• Spy System
+• Revenue
+• Judiciary
+• Military
+Arthashastra
+• Authorship
+• Administration
+• Economy
+• Taxation
+• Diplomacy
+• Mandala Theory
+Mauryan Economy
+• Agriculture
+• Irrigation
+• Trade
+• Guilds
+• Coinage
+Decline of Mauryan Empire
+• Weak Successors
+• Economic Factors
+• Administrative Factors
+• Foreign Invasions
+11. Post-Mauryan India
+Indo-Greeks
+• Demetrius
+• Menander (Milinda)
+• Contributions
+Shakas
+• Western Kshatrapas
+• Rudradaman I
+Parthians
+Kushanas
+• Kujula Kadphises
+• Kanishka
+• Fourth Buddhist Council
+• Gandhara School
+• Mathura School
+Satavahanas
+• Gautamiputra Satakarni
+• Administration
+• Society
+• Trade
+12. Sangam Age
+Sangam Literature
+• Ettuthokai
+• Pattuppattu
+• Tolkappiyam
+Tamil Kingdoms
+• Chera
+• Chola
+• Pandya
+Society
+Economy
+Ports
+Trade
+Religion
+13. Ancient Art & Culture
+Stupas
+Chaityas
+Viharas
+Rock-cut Architecture
+Early Temple Architecture
+14. Gupta Empire
+Rise of the Guptas
+• Sri Gupta
+• Ghatotkacha
+• Chandragupta I
+Samudragupta
+• Prayaga Prashasti
+• Military Campaigns
+• Southern Policy
+• Frontier States
+• Administration
+Chandragupta II (Vikramaditya)
+• Expansion
+• Ujjain
+• Trade
+• Fa-Hien's Account
+Kumaragupta I
+Skandagupta
+Gupta Administration
+• Central Administration
+• Provincial Administration
+• Local Administration
+• Revenue
+• Judiciary
+• Military
+Gupta Economy
+• Agriculture
+• Land Grants
+• Trade
+• Guilds
+• Coinage
+Gupta Society
+• Varna System
+• Women
+• Education
+• Religion
+Gupta Age Contributions
+• Literature
+• Science
+• Mathematics
+• Astronomy
+• Medicine
+• Metallurgy
+Decline of the Gupta Empire
+• Huna Invasions
+• Feudalism
+• Weak Successors
+15. Post-Gupta Period
+Harshavardhana
+• Rise
+• Administration
+• Religion
+• Assemblies
+• Hiuen Tsang's Account
+Pushyabhuti Dynasty
+Huna Invasions
+Tripartite Struggle
+• Palas
+• Pratiharas
+• Rashtrakutas
+16. Early Medieval South India
+Pallavas
+• Administration
+• Architecture
+• Mahabalipuram
+Chalukyas
+• Badami Chalukyas
+• Aihole
+• Pattadakal
+Rashtrakutas
+Cholas
+• Vijayalaya
+• Rajaraja I
+• Rajendra I
+• Local Self-Government
+• Naval Power
+• Temple Administration
+Pandyas
+Cheras
+Hoysalas
+Kakatiyas
+Yadavas
+17. Ancient Indian Administration
+• Kingship
+• Council of Ministers
+• Revenue Administration
+• Judiciary
+• Army
+• Espionage
+• Village Administration
+18. Ancient Indian Economy
+• Agriculture
+• Irrigation
+• Land Revenue
+• Trade
+• Inland Trade
+• Maritime Trade
+• Guilds (Shrenis)
+• Banking
+• Coinage
+• Taxation
+19. Ancient Indian Society
+• Family
+• Marriage
+• Women
+• Education
+• Slavery
+• Varna
+• Jati
+• Ashrama System
+20. Ancient Science & Technology
+Mathematics
+• Aryabhata
+• Brahmagupta
+• Bhaskaracharya
+Astronomy
+Medicine
+• Charaka
+• Sushruta
+Metallurgy
+Shipbuilding
+21. Ancient Art & Architecture
+Stupas
+Chaityas
+Viharas
+Rock-cut Caves
+• Ajanta
+• Ellora
+• Karla
+• Bhaja
+Temple Architecture
+• Nagara
+• Dravida
+• Vesara
+Sculpture
+Paintings
+Pillars
+22. Ancient Literature
+• Sanskrit Literature
+• Tamil Literature
+• Pali Literature
+• Prakrit Literature
+• Buddhist Literature
+• Jain Literature
+Medieval Indian History
+23. Transition to Medieval India
+• Early Medieval Period
+• Feudalism Debate
+• Regional Kingdoms
+24. Rajput Age
+Origin of Rajputs
+Major Rajput Dynasties
+• Chauhans
+• Paramaras
+• Solankis
+• Gahadavalas
+• Chandelas
+Administration
+Society
+Culture
+Architecture
+25. Arab Invasion
+• Muhammad bin Qasim
+• Conquest of Sindh
+• Causes
+• Impact
+26. Turkish Invasions
+Mahmud of Ghazni
+• Major Expeditions
+• Somnath
+Muhammad Ghori
+• Battles of Tarain
+• Legacy
+27. Delhi Sultanate
+Slave (Mamluk) Dynasty
+• Qutb-ud-din Aibak
+• Iltutmish
+• Razia Sultan
+• Balban
+Khalji Dynasty
+• Jalaluddin Khalji
+• Alauddin Khalji
+• Market Reforms
+• Deccan Campaigns
+Tughlaq Dynasty
+• Ghiyasuddin Tughlaq
+• Muhammad bin Tughlaq
+• Firoz Shah Tughlaq
+Sayyid Dynasty
+Lodi Dynasty
+• Bahlul Lodi
+• Sikandar Lodi
+• Ibrahim Lodi
+Administration
+• Iqta System
+• Revenue
+• Army
+• Judiciary
+• Currency
+28. Provincial Kingdoms
+• Bengal
+• Gujarat
+• Malwa
+• Jaunpur
+• Kashmir
+• Odisha
+29. Vijayanagara Empire
+• Sangama Dynasty
+• Saluva Dynasty
+• Tuluva Dynasty
+• Krishnadevaraya
+• Administration
+• Nayankara System
+• Economy
+• Battle of Talikota
+30. Bahmani Sultanate
+• Foundation
+• Administration
+• Deccan Politics
+• Successor States
+31. Bhakti Movement
+Early Bhakti
+• Alvars
+• Nayanars
+North Indian Saints
+• Ramananda
+• Kabir
+• Guru Nanak
+• Ravidas
+• Tulsidas
+• Surdas
+• Mirabai
+Maharashtra Saints
+• Dnyaneshwar
+• Namdev
+• Eknath
+• Tukaram
+32. Sufi Movement
+• Chishti Order
+• Suhrawardi Order
+• Qadiri Order
+• Naqshbandi Order
+• Khanqahs
+• Sufi Literature
+Mughal Empire
+33. Foundation of the Mughal Empire
+Babur
+• Early Life
+• First Battle of Panipat (1526)
+• Battle of Khanwa
+• Battle of Chanderi
+• Battle of Ghaghra
+• Tuzuk-i-Baburi (Baburnama)
+• Administration
+• Military Innovations
+Humayun
+• Challenges
+• Sher Shah Suri
+• Exile in Persia
+• Restoration
+• Death
+34. Sur Empire
+Sher Shah Suri
+• Administration
+• Revenue Reforms
+• Currency
+• Road Network
+• Postal System
+• Military Reforms
+Successors
+• Islam Shah
+• Decline
+35. Akbar
+Expansion
+• Rajput Policy
+• Gujarat Campaign
+• Bengal Campaign
+• Deccan Policy
+Administration
+• Central Administration
+• Provincial Administration
+• Mansabdari System
+• Jagirdari System
+• Revenue System (Todar Mal)
+• Military
+Religion
+• Sulh-i-Kul
+• Ibadat Khana
+• Din-i-Ilahi
+Society & Economy
+• Agriculture
+• Trade
+• Crafts
+• Urban Centres
+Culture
+• Navratnas
+• Literature
+• Paintings
+• Architecture
+36. Jahangir
+• Administration
+• Nur Jahan Junta
+• Justice
+• Foreign Travellers
+• Art & Painting
+37. Shah Jahan
+• Administration
+• Architecture
+• Taj Mahal
+• Red Fort
+• Peacock Throne
+• Economy
+38. Aurangzeb
+• Expansion
+• Deccan Campaigns
+• Religious Policy
+• Maratha Conflict
+• Administration
+• Decline Factors
+39. Mughal Administration
+• Central Administration
+• Provincial Administration
+• Mansabdari
+• Jagirdari
+• Revenue Administration
+• Judiciary
+• Military
+• Intelligence
+40. Mughal Economy
+• Agriculture
+• Irrigation
+• Trade
+• Ports
+• Coinage
+• Taxation
+• Industries
+• Markets
+41. Mughal Society
+• Social Structure
+• Women
+• Education
+• Religion
+• Festivals
+42. Mughal Art & Architecture
+Architecture
+• Humayun's Tomb
+• Fatehpur Sikri
+• Agra Fort
+• Taj Mahal
+• Jama Masjid
+• Red Fort
+Painting
+Music
+Literature
+Calligraphy
+43. Decline of the Mughal Empire
+• Internal Causes
+• External Causes
+• Regional Kingdoms
+Invasions
+• Nadir Shah
+• Ahmad Shah Abdali
+Transition to Modern India
+44. Rise of the Marathas
+Background
+• Deccan Politics
+• Decline of the Deccan Sultanates
+Shivaji Maharaj
+• Early Life
+• Swarajya
+• Coronation
+• Ashtapradhan Council
+• Revenue Administration
+• Military Organization
+• Fort Administration
+• Naval Policy
+• Religious Policy
+Successors
+• Sambhaji
+• Rajaram
+• Tarabai
+• Shahu
+Peshwa Period
+• Balaji Vishwanath
+• Baji Rao I
+• Balaji Baji Rao
+• Madhav Rao I
+• Decline of the Peshwas
+Maratha Administration
+• Chauth
+• Sardeshmukhi
+• Jagir System
+• Village Administration
+Third Battle of Panipat
+• Causes
+• Course
+• Consequences
+45. Rise of Regional States
+• Hyderabad
+• Awadh
+• Bengal
+• Mysore
+• Punjab under the Sikhs
+• Jats
+• Rohillas
+• Rajputs
+46. Arrival of Europeans
+Portuguese
+• Vasco da Gama
+• Almeida
+• Albuquerque
+• Decline
+Dutch
+Danish
+French
+British
+47. British East India Company
+Foundation
+Early Settlements
+• Surat
+• Madras
+• Bombay
+• Calcutta
+Expansion in India
+Carnatic Wars
+• First Carnatic War
+• Second Carnatic War
+• Third Carnatic War
+Bengal
+• Battle of Plassey (1757)
+• Battle of Buxar (1764)
+• Dual Government
+Mysore Wars
+• First Anglo-Mysore War
+• Second Anglo-Mysore War
+• Third Anglo-Mysore War
+• Fourth Anglo-Mysore War
+• Hyder Ali
+• Tipu Sultan
+Anglo-Maratha Wars
+• First
+• Second
+• Third
+Anglo-Sikh Wars
+• First
+• Second
+48. Expansion Policies
+• Subsidiary Alliance
+• Doctrine of Lapse
+• Paramountcy
+49. Company Administration
+• Regulating Act, 1773
+• Pitt's India Act, 1784
+Charter Acts
+• 1793
+• 1813
+• 1833
+• 1853
+Judicial Reforms
+Police Reforms
+Civil Services
+50. Land Revenue Systems
+• Permanent Settlement
+• Ryotwari System
+• Mahalwari System
+British Administration & National Awakening
+51. Governor-Generals and Viceroys
+Warren Hastings
+• Judicial Reforms
+• Revenue Reforms
+• Rohilla War
+• Pitt's India Act
+Lord Cornwallis
+• Cornwallis Code
+• Permanent Settlement
+• Civil Services
+Lord Wellesley
+• Subsidiary Alliance
+• Mysore Policy
+• Maratha Policy
+Lord Hastings
+Lord Amherst
+Lord William Bentinck
+• Abolition of Sati
+• English Education
+• Charter Act 1833
+Lord Auckland
+Lord Ellenborough
+Lord Hardinge
+Lord Dalhousie
+• Doctrine of Lapse
+• Railways
+• Telegraph
+• Postal Reforms
+• Public Works
+Lord Canning
+Lord Mayo
+Lord Lytton
+Lord Ripon
+• Local Self Government
+• Ilbert Bill
+Lord Dufferin
+Lord Curzon
+• Partition of Bengal
+• Universities Act
+• Police Commission
+Lord Minto
+Lord Hardinge II
+Lord Chelmsford
+Lord Reading
+Lord Irwin
+Lord Willingdon
+Lord Linlithgow
+Lord Wavell
+Lord Mountbatten
+52. Revolt of 1857
+Causes
+• Political
+• Economic
+• Military
+• Religious
+• Immediate Cause
+Centres of Revolt
+• Delhi
+• Kanpur
+• Lucknow
+• Jhansi
+• Bareilly
+• Arrah
+Leaders
+• Bahadur Shah II
+• Rani Lakshmibai
+• Nana Sahib
+• Tantia Tope
+• Kunwar Singh
+• Begum Hazrat Mahal
+Nature of Revolt
+Causes of Failure
+Consequences
+Historiography
+53. Socio-Religious Reform Movements
+• Brahmo Samaj
+• Arya Samaj
+• Prarthana Samaj
+• Ramakrishna Mission
+• Theosophical Society
+• Aligarh Movement
+• Satyashodhak Samaj
+• SNDP Movement
+• Singh Sabha Movement
+• Young Bengal Movement
+• Widow Remarriage Movement
+• Women Education
+54. Tribal Revolts
+• Santhal Revolt
+• Munda Ulgulan
+• Kol Revolt
+• Bhil Revolt
+• Ramosi Revolt
+• Koya Revolt
+• Khasi Revolt
+55. Peasant Movements
+• Indigo Revolt
+• Pabna Movement
+• Deccan Riots
+• Moplah Rebellion
+• Bardoli Satyagraha
+• Champaran Movement
+• Kheda Satyagraha
+Indian National Movement
+56. Indian National Congress
+• Formation
+• A.O. Hume
+• Early Sessions
+• Objectives
+57. Moderate Phase (1885–1905)
+• Dadabhai Naoroji
+• Pherozeshah Mehta
+• Gopal Krishna Gokhale
+• Methods
+• Achievements
+• Limitations
+58. Extremist Phase
+• Bal Gangadhar Tilak
+• Bipin Chandra Pal
+• Lala Lajpat Rai
+• Swadeshi Movement
+• Boycott
+• Surat Split
+59. Revolutionary Movement
+• Anushilan Samiti
+• Ghadar Party
+• HSRA
+• Kakori
+• Chittagong Armoury Raid
+• Bhagat Singh
+• Chandrashekhar Azad
+60. Home Rule Movement
+• Annie Besant
+• Bal Gangadhar Tilak
+61. Gandhian Era
+• Champaran
+• Kheda
+• Ahmedabad Mill Strike
+• Rowlatt Satyagraha
+• Jallianwala Bagh
+• Khilafat Movement
+• Non-Cooperation
+• Swaraj Party
+• Simon Commission
+• Nehru Report
+• Lahore Session
+• Civil Disobedience
+• Dandi March
+• Round Table Conferences
+• Poona Pact
+• Individual Satyagraha
+• Quit India Movement
+• INA
+62. Constitutional Developments
+• Indian Councils Acts
+• Morley-Minto Reforms
+• Montagu-Chelmsford Reforms
+• Government of India Act 1919
+• Government of India Act 1935
+• Cripps Mission
+• Wavell Plan
+• Cabinet Mission
+• Mountbatten Plan
+• Indian Independence Act 1947
+63. Partition of India
+• Causes
+• Mountbatten Plan
+• Radcliffe Line
+• Integration of Princely State
+
+Comprehensive Indian Polity Taxonomy
+Constitutional History
+• Regulating Act 1773
+• Pitt's India Act 1784
+• Charter Acts
+• Indian Councils Acts
+• GOI Act 1909
+• GOI Act 1919
+• GOI Act 1935
+• Indian Independence Act 1947
+Constituent Assembly
+• Formation
+• Composition
+• Committees
+• Drafting Committee
+• Constitution Making
+Constitution
+• Sources
+• Features
+• Preamble
+• Union & Territory
+• Citizenship
+Fundamental Rights
+• Right to Equality
+• Right to Freedom
+• Right against Exploitation
+• Freedom of Religion
+• Cultural & Educational Rights
+• Constitutional Remedies
+• Writs
+Directive Principles
+• Socialist
+• Gandhian
+• Liberal
+Fundamental Duties
+Union Executive
+• President
+• Vice President
+• Prime Minister
+• Council of Ministers
+• Cabinet
+• Attorney General
+Parliament
+• Lok Sabha
+• Rajya Sabha
+• Sessions
+• Question Hour
+• Zero Hour
+• Budget
+• Money Bill
+• Finance Bill
+• Constitutional Amendment
+Judiciary
+• Supreme Court
+• High Courts
+• Subordinate Courts
+• Judicial Review
+• Judicial Activism
+• PIL
+• Basic Structure Doctrine
+State Government
+• Governor
+• Chief Minister
+• State Legislature
+Local Government
+• Panchayati Raj
+• Municipalities
+Union-State Relations
+• Legislative
+• Administrative
+• Financial
+Emergency Provisions
+• National
+• State
+• Financial
+Constitutional Bodies
+• Election Commission of India
+• Finance Commission
+• Union Public Service Commission
+• State Public Service Commissions
+• Comptroller and Auditor General
+• Attorney General of India
+• Advocate General
+• Special Officer for Linguistic Minorities
+Statutory Bodies
+• National Human Rights Commission
+• National Commission for Women
+• National Commission for SCs
+• National Commission for STs
+• National Commission for Backward Classes
+• Central Vigilance Commission
+• Central Information Commission
+• Lokpal
+• Lokayuktas
+Regulatory Bodies
+• RBI
+• SEBI
+• IRDAI
+• PFRDA
+• TRAI
+• CERC
+Elections
+• Election Process
+• Electoral Roll
+• Delimitation
+• Political Parties
+• Anti-Defection Law
+• Model Code of Conduct
+• Electoral Reforms
+• VVPAT
+• EVM
+Political Dynamics
+• Coalition Government
+• Pressure Groups
+• Regional Parties
+Governance
+• Good Governance
+• E-Governance
+• Citizen Charter
+• RTI Act
+• Whistle Blowers Protection
+• Social Audit
+• Public Service Delivery
+• Accountability
+• Transparency
+Important Acts
+• RTI Act
+• Lokpal Act
+• RPA 1950
+• RPA 1951
+Constitutional Amendments
+• 1st
+• 7th
+• 24th
+• 25th
+• 42nd
+• 44th
+• 52nd
+• 61st
+• 73rd
+• 74th
+• 86th
+• 91st
+• 97th
+• 101st
+• 102nd
+• 103rd
+• 104th
+• 105th
+• 106th
+Schedules
+• First to Twelfth Schedule
+Constitutional Doctrines
+• Basic Structure
+• Eclipse
+• Severability
+• Pith and Substance
+• Colourable Legislation
+• Harmonious Construction
+• Repugnanc
+
+Comprehensive Science & Technology Taxonomy
+Physics
+Mechanics
+• Units & Measurements
+• Motion
+• Laws of Motion
+• Work, Energy & Power
+• Gravitation
+• Rotational Motion
+Properties of Matter
+• Elasticity
+• Surface Tension
+• Viscosity
+Heat & Thermodynamics
+• Temperature
+• Heat Transfer
+• Thermodynamics
+• Kinetic Theory
+Waves
+• Sound
+• Light
+• Reflection
+• Refraction
+• Optical Instruments
+Electricity & Magnetism
+• Current Electricity
+• Magnetism
+• Electromagnetic Induction
+Chemistry
+Physical Chemistry
+• Atomic Structure
+• Chemical Bonding
+• States of Matter
+• Thermochemistry
+• Equilibrium
+• Electrochemistry
+Inorganic Chemistry
+• Periodic Table
+• s, p, d, f Block
+• Coordination Compounds
+Organic Chemistry
+• Hydrocarbons
+• Alcohols
+• Aldehydes
+• Ketones
+• Carboxylic Acids
+• Polymers
+Everyday Chemistry
+• Fertilizers
+• Soaps & Detergents
+• Cement
+• Glass
+Biology
+Core Biology
+• Cell Biology
+• Biomolecules
+• Genetics
+• Evolution
+• Human Physiology
+• Plant Physiology
+• Reproduction
+• Biotechnology
+• Microbiology
+• Diseases
+• Nutrition
+• Immunity
+Zoology
+• Animal Kingdom
+• Classification
+• Invertebrates
+• Vertebrates
+• Human Anatomy
+• Human Organ Systems
+Botany
+• Plant Kingdom
+• Plant Anatomy
+• Plant Physiology
+• Photosynthesis
+• Plant Hormones
+• Plant Diseases
+Human Health
+• Nutrition
+• Vitamins
+• Minerals
+• Deficiency Diseases
+• Infectious Diseases
+• Non-Communicable Diseases
+• Vaccination
+• Immunity
+• Public Health
+Biotechnology (Advanced)
+• DNA Technology
+• Genetic Engineering
+• GM Crops
+• Stem Cells
+• Cloning
+Space Science
+• ISRO
+• Launch Vehicles
+• Satellites
+• Space Missions
+• Chandrayaan
+• Mangalyaan
+• Gaganyaan
+• Aditya-L1
+• Black Holes
+• Exoplanets
+• Astronomy Basics
+Information Technology
+• Computers
+• Internet
+• Networking
+• Cloud Computing
+• Cyber Security
+• Artificial Intelligence
+• Machine Learning
+• Robotics
+• Blockchain
+• Quantum Computing
+Advanced Technologies
+• Nanotechnology
+• Nuclear Technology
+• Defence Technology
+• Drones
+• Semiconductor Technology
+• 5G & 6G
+• Internet of Things
+• Green Technology
+• Recent Science & Technolog

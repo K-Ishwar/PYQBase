@@ -3,7 +3,7 @@ from sqlalchemy import select, delete, func
 from typing import Optional
 from uuid import UUID
 
-from app.models.taxonomy import SubjectDb, TopicDb, SubtopicDb
+from app.models.taxonomy import SubjectDb, TopicDb
 
 
 # ─── Subjects ──────────────────────────────────────────────────────────────────
@@ -80,37 +80,15 @@ async def delete_topic(db: AsyncSession, topic_id: UUID) -> bool:
     return True
 
 
-# ─── Subtopics ─────────────────────────────────────────────────────────────────
 
-async def list_subtopics(db: AsyncSession, topic_id: UUID) -> list[SubtopicDb]:
-    result = await db.execute(
-        select(SubtopicDb).where(SubtopicDb.topic_id == topic_id).order_by(SubtopicDb.name)
-    )
-    return result.scalars().all()
+# ─── Bulk Operations ───────────────────────────────────────────────────────────
 
-async def create_subtopic(db: AsyncSession, topic_id: UUID, name: str) -> SubtopicDb:
-    subtopic = SubtopicDb(topic_id=topic_id, name=name)
-    db.add(subtopic)
-    await db.commit()
-    await db.refresh(subtopic)
-    return subtopic
-
-async def get_or_create_subtopic(db: AsyncSession, topic_id: UUID, name: str) -> SubtopicDb:
-    result = await db.execute(
-        select(SubtopicDb)
-        .where(SubtopicDb.topic_id == topic_id)
-        .where(func.lower(SubtopicDb.name) == name.lower())
-    )
-    subtopic = result.scalar_one_or_none()
-    if subtopic:
-        return subtopic
-    return await create_subtopic(db, topic_id, name)
-
-async def delete_subtopic(db: AsyncSession, subtopic_id: UUID) -> bool:
-    result = await db.execute(select(SubtopicDb).where(SubtopicDb.id == subtopic_id))
-    subtopic = result.scalar_one_or_none()
-    if not subtopic:
-        return False
-    await db.delete(subtopic)
-    await db.commit()
-    return True
+async def get_all_taxonomy_data(db: AsyncSession) -> tuple[list[SubjectDb], list[TopicDb]]:
+    """
+    Fetches the entire taxonomy across all tiers in exactly 2 queries.
+    """
+    subjects = (await db.execute(select(SubjectDb).order_by(SubjectDb.name))).scalars().all()
+    topics = (await db.execute(select(TopicDb).order_by(TopicDb.name))).scalars().all()
+    
+    # Returning lists directly; SQLite/Postgres rows converted to list of models
+    return list(subjects), list(topics)

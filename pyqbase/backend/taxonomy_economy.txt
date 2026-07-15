@@ -1,0 +1,159 @@
+Comprehensive Economy Taxonomy
+1. Basics of Economics
+• Meaning of Economics
+• Microeconomics
+• Macroeconomics
+• Positive vs Normative Economics
+• Economic Systems
+○ Capitalism
+○ Socialism
+○ Mixed Economy
+• Scarcity
+• Choice
+• Opportunity Cost
+• Production Possibility Curve
+• Demand
+• Supply
+• Market Equilibrium
+• Elasticity
+2. National Income
+• GDP
+• GNP
+• NDP
+• NNP
+• GVA
+• Per Capita Income
+• Nominal GDP
+• Real GDP
+• Base Year
+• GDP Deflator
+• Methods of Estimation
+3. Inflation
+• CPI
+• WPI
+• Core Inflation
+• Headline Inflation
+• Deflation
+• Stagflation
+• Disinflation
+4. Banking
+• Functions of RBI
+• Scheduled Banks
+• Commercial Banks
+• Cooperative Banks
+• Small Finance Banks
+• Payment Banks
+• NBFCs
+5. Monetary Policy
+• Repo Rate
+• Reverse Repo
+• SDF
+• MSF
+• Bank Rate
+• CRR
+• SLR
+• Open Market Operations
+• Liquidity Adjustment Facility
+• MPC
+6. Public Finance
+• Budget
+• Fiscal Policy
+• Revenue Deficit
+• Fiscal Deficit
+• Primary Deficit
+• Public Debt
+7. Taxation
+• Direct Tax
+• Indirect Tax
+• GST
+• Customs
+• Excise
+• Income Tax
+• Corporation Tax
+8. Financial Markets
+• Money Market
+• Capital Market
+• Stock Exchange
+• Bond Market
+• Mutual Funds
+• Insurance
+• Pension
+• Derivatives
+9. Regulators
+• RBI
+• SEBI
+• IRDAI
+• PFRDA
+• IFSCA
+10. External Sector
+• Balance of Payments
+• Current Account
+• Capital Account
+• Foreign Exchange
+• Exchange Rate
+• Forex Reserves
+• Convertibility
+• FEMA
+• FDI
+• FPI
+• External Commercial Borrowings
+• Trade Deficit
+• Current Account Deficit
+• WTO
+• Free Trade Agreements
+11. Agriculture & Rural Economy
+• Cropping Seasons
+• MSP
+• APMC
+• e-NAM
+• Agricultural Marketing
+• Irrigation
+• PM-KISAN
+• Crop Insurance
+• Food Processing
+• Dairy
+• Fisheries
+• Animal Husbandry
+12. Infrastructure
+• Energy
+• Roads
+• Railways
+• Ports
+• Airports
+• Logistics
+• Urban Infrastructure
+• Digital Infrastructure
+13. Industry
+• MSMEs
+• Make in India
+• PLI Scheme
+• Startup India
+• Ease of Doing Business
+14. Inclusive Growth
+• Poverty
+• Unemployment
+• Inequality
+• Human Development Index
+• Multidimensional Poverty
+• Financial Inclusion
+• Jan Dhan Yojana
+• MUDRA
+• SHGs
+• Skill India
+15. Sustainable Development
+• SDGs
+• Green Economy
+• Circular Economy
+• Carbon Markets
+• ESG
+• Climate Finance
+16. Reports & Institutions
+• Economic Survey
+• Union Budget
+• NITI Aayog
+• IMF
+• World Bank
+• ADB
+• AIIB
+• BRICS Bank
+• OECD

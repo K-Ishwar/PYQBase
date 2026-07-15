@@ -26,7 +26,7 @@ class QuestionDb(SQLModel, table=True):
     image_description: Optional[str] = Field(default=None, sa_column=Column(Text))
     explanation: Optional[dict] = Field(default=None, sa_column=Column(JSONB))
     parse_confidence: Optional[float] = None
-    subtopic_id: UUID = Field(foreign_key="subtopics.id")
+    topic_id: UUID = Field(foreign_key="topics.id")
     syllabus_point_id: Optional[int] = None
     elo_rating: int = Field(default=1200)
     # search_vector is managed by a DB trigger — excluded from writes
@@ -57,7 +57,7 @@ class QuestionUpsertPayload(BaseModel):
     image_url: Optional[str] = None
     image_description: Optional[str] = None
     parse_confidence: Optional[float] = None
-    subtopic_id: UUID
+    topic_id: UUID
     manual_review_approved: bool = False
 
     @model_validator(mode="after")
@@ -89,10 +89,9 @@ class QuestionResponse(BaseModel):
     has_image: bool
     image_url: Optional[str]
     parse_confidence: Optional[float]
-    subtopic_id: UUID
+    topic_id: UUID
     subject_name: Optional[str] = None
     topic_name: Optional[str] = None
-    subtopic_name: Optional[str] = None
     elo_rating: int
     created_at: datetime
 
@@ -113,10 +112,9 @@ class QuestionListItem(BaseModel):
     question_type: str
     has_image: bool
     image_url: Optional[str]
-    subtopic_id: UUID
+    topic_id: UUID
     subject_name: Optional[str] = None
     topic_name: Optional[str] = None
-    subtopic_name: Optional[str] = None
     elo_rating: int
     ts_rank: Optional[float] = None   # populated by search queries
     created_at: datetime
