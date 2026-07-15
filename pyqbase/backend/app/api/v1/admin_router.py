@@ -1,19 +1,506 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 from uuid import UUID, uuid4
+from pydantic import BaseModel
 
 from app.core.database import get_db
 from app.core.security import get_admin_user, User
-from app.models.question import QuestionUpsertPayload, QuestionResponse
+from app.models.question import QuestionDb, QuestionUpsertPayload, QuestionResponse
 from app.models.taxonomy import (
+    SubjectDb,
     SubjectCreate, SubjectResponse,
+    TopicDb,
     TopicCreate, TopicResponse,
+    SubtopicDb,
     SubtopicCreate, SubtopicResponse,
 )
+from app.models.audit_log import AuditLogDb
 from app.repositories import question_repo, taxonomy_repo
 from app.services.audit_service import log_admin_action
 
 router = APIRouter()
+
+@router.get("/trigger-import-taxonomy", status_code=200)
+async def trigger_import_taxonomy(db: AsyncSession = Depends(get_db)):
+    DATA = """
+1. History
+Ancient History
+Medieval History
+Modern History
+World History
+Art & Culture
+Freedom Struggle
+Post-Independence India
+Historical Personalities
+Historical Places
+Architecture
+Literature History
+Religion & Philosophy
+Archaeology
+Historiography
+2. Geography
+Physical Geography
+Geomorphology
+Climatology
+Oceanography
+Biogeography
+Environmental Geography
+Indian Geography
+Physiography
+Rivers
+Climate
+Agriculture
+Industries
+Resources
+Population
+Transport
+Energy
+Disaster Geography
+World Geography
+Continents
+Countries
+Capitals
+Maps
+Important Locations
+3. Indian Polity
+Constitution
+Preamble
+Fundamental Rights
+DPSP
+Fundamental Duties
+Parliament
+State Legislature
+President
+Vice President
+Prime Minister
+Governor
+Judiciary
+Supreme Court
+High Court
+Constitutional Bodies
+Statutory Bodies
+Local Government
+Elections
+Political Parties
+Emergency Provisions
+Constitutional Amendments
+Schedules
+Union-State Relations
+Panchayati Raj
+Governance
+Public Policy
+4. Economy
+Basic Economics
+National Income
+Inflation
+Banking
+RBI
+Monetary Policy
+Fiscal Policy
+Budget
+Taxation
+Public Finance
+Agriculture Economics
+External Sector
+International Trade
+WTO
+IMF
+World Bank
+Poverty
+Employment
+Infrastructure
+Economic Survey
+Five-Year Plans
+NITI Aayog
+Industry
+MSME
+Stock Market
+Financial Markets
+Insurance
+Digital Economy
+5. Science
+Physics
+Mechanics
+Heat
+Light
+Sound
+Electricity
+Magnetism
+Modern Physics
+Electronics
+Chemistry
+Physical Chemistry
+Organic Chemistry
+Inorganic Chemistry
+Everyday Chemistry
+Biology
+Cell Biology
+Genetics
+Human Physiology
+Plant Physiology
+Ecology
+Biotechnology
+Zoology
+Botany
+Microbiology
+Diseases
+Nutrition
+6. Environment & Ecology
+Ecology
+Ecosystem
+Biodiversity
+Climate Change
+Pollution
+Wildlife
+National Parks
+Biosphere Reserves
+Ramsar Sites
+Conservation
+Environmental Laws
+Sustainable Development
+International Conventions
+7. Science & Technology
+Space Technology
+Defence Technology
+Biotechnology
+Nanotechnology
+Artificial Intelligence
+Robotics
+Quantum Technology
+Semiconductors
+Nuclear Technology
+Information Technology
+Internet
+Cyber Security
+Communication Technology
+8. Current Affairs
+National
+International
+Economy
+Science
+Environment
+Awards
+Sports
+Books
+Reports
+Summits
+Government Schemes
+Personalities
+Important Days
+9. International Relations
+International Organizations
+Bilateral Relations
+Global Issues
+International Treaties
+Regional Organizations
+Geopolitics
+10. Agriculture
+Crops
+Irrigation
+Soil
+Fertilizers
+Animal Husbandry
+Fisheries
+Horticulture
+Agricultural Schemes
+Agricultural Economics
+11. Disaster Management
+Natural Disasters
+Man-made Disasters
+Disaster Management Act
+NDMA
+Preparedness
+Climate Risks
+12. Internal Security
+Terrorism
+Left Wing Extremism
+Cyber Security
+Border Security
+Intelligence Agencies
+Organized Crime
+Money Laundering
+Coastal Security
+13. Ethics (UPSC GS-4)
+Ethics
+Integrity
+Aptitude
+Emotional Intelligence
+Probity
+Civil Service Values
+Case Studies
+14. General Science
+Everyday Science
+Scientific Instruments
+Inventions
+Discoveries
+Nobel Prizes
+15. Computer
+Hardware
+Software
+Operating System
+MS Office
+Internet
+Networking
+Database
+Programming Basics
+Cyber Security
+Computer Abbreviations
+16. Mathematics
+Arithmetic
+Number System
+Simplification
+Percentage
+Profit & Loss
+Simple Interest
+Compound Interest
+Ratio
+Proportion
+Average
+Partnership
+Time & Work
+Pipes & Cistern
+Time Speed Distance
+Boat & Stream
+Mixture
+Ages
+Advanced Math
+Algebra
+Geometry
+Mensuration
+Trigonometry
+Coordinate Geometry
+Statistics
+17. Reasoning
+Verbal
+Analogy
+Classification
+Coding Decoding
+Blood Relations
+Direction Sense
+Syllogism
+Statement Conclusion
+Seating Arrangement
+Ranking
+Alphabet
+Puzzle
+Non-Verbal
+Mirror Image
+Paper Folding
+Figure Series
+Embedded Figures
+18. English
+Grammar
+Parts of Speech
+Tenses
+Voice
+Narration
+Articles
+Prepositions
+Conjunctions
+Subject Verb Agreement
+Vocabulary
+Synonyms
+Antonyms
+Idioms
+Phrases
+One Word Substitution
+Spelling
+Homophones
+Comprehension
+Reading Comprehension
+Cloze Test
+Para Jumbles
+Sentence Improvement
+Error Detection
+19. Hindi / Marathi / Regional Language
+Grammar
+Vocabulary
+Comprehension
+Literature
+20. General Knowledge
+Awards
+Books
+Sports
+Important Days
+Personalities
+Organizations
+Miscellaneous Facts
+21. Defence
+Indian Army
+Indian Navy
+Indian Air Force
+DRDO
+Missiles
+Exercises
+Ranks
+Commands
+22. Government Schemes
+Social Welfare
+Health
+Education
+Agriculture
+Women & Child
+Infrastructure
+Skill Development
+23. Aptitude
+Logical Aptitude
+Numerical Aptitude
+Data Interpretation
+Analytical Aptitude
+24. Data Interpretation
+Tables
+Pie Charts
+Line Graphs
+Bar Graphs
+Mixed Graphs
+Caselets
+25. Statistics
+Mean
+Median
+Mode
+Probability
+Permutation & Combination
+Standard Deviation
+26. Commerce (Some State Exams)
+Accounting
+Business Studies
+Finance
+Auditing
+Cost Accounting
+27. Law
+Constitutional Law
+Criminal Law
+Civil Law
+IPC/BNS
+CrPC/BNSS
+Evidence Act
+Contract Act
+28. Public Administration
+Administration
+Governance
+Accountability
+Civil Services
+Administrative Thinkers
+29. Sociology
+Society
+Social Institutions
+Social Change
+Stratification
+Thinkers
+30. Psychology
+Learning
+Intelligence
+Personality
+Motivation
+Perception
+31. Philosophy
+Indian Philosophy
+Western Philosophy
+Logic
+Ethics
+32. Miscellaneous
+Mixed Questions
+Assertion–Reason
+Match the Following
+Chronology
+Statement Based
+Map Based
+Picture Based
+Data Based
+Passage Based
+"""
+import asyncio
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy import text
+from app.core.config import settings
+
+async def background_import_taxonomy():
+    try:
+        engine = create_async_engine(settings.direct_database_url, echo=False)
+        async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        
+        async with async_session() as db:
+            lines = [l.strip() for l in DATA.splitlines() if l.strip()]
+            current_subject_id = None
+            
+            for line in lines:
+                if line[0].isdigit() and ". " in line:
+                    subj_name = line.split(". ", 1)[1].strip()
+                    res = await db.execute(
+                        text("INSERT INTO subjects (id, name) VALUES (gen_random_uuid(), :name) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id"),
+                        {"name": subj_name}
+                    )
+                    current_subject_id = res.scalar()
+                else:
+                    if not current_subject_id:
+                        continue
+                    
+                    topic_name = line.strip()
+                    res = await db.execute(
+                        text("""
+                            INSERT INTO topics (id, subject_id, name) 
+                            VALUES (gen_random_uuid(), :sid, :name) 
+                            ON CONFLICT DO NOTHING 
+                            RETURNING id
+                        """),
+                        {"sid": current_subject_id, "name": topic_name}
+                    )
+                    topic_id = res.scalar()
+                    
+                    if not topic_id:
+                        res = await db.execute(
+                            text("SELECT id FROM topics WHERE subject_id = :sid AND name = :name"),
+                            {"sid": current_subject_id, "name": topic_name}
+                        )
+                        topic_id = res.scalar()
+                        
+                    await db.execute(
+                        text("""
+                            INSERT INTO subtopics (id, topic_id, name) 
+                            VALUES (gen_random_uuid(), :tid, :name) 
+                            ON CONFLICT DO NOTHING
+                        """),
+                        {"tid": topic_id, "name": topic_name}
+                    )
+                        
+            await db.commit()
+            with open("import_result.txt", "w") as f:
+                f.write("SUCCESS")
+    except Exception as e:
+        import traceback
+        with open("import_result.txt", "w") as f:
+            f.write(traceback.format_exc())
+
+
+from fastapi import BackgroundTasks
+
+@router.get("/trigger-import-taxonomy", status_code=200)
+async def trigger_import_taxonomy(background_tasks: BackgroundTasks):
+    background_tasks.add_task(background_import_taxonomy)
+    return {"message": "import started in background"}
+
+
+class AdminStatsResponse(BaseModel):
+    total_questions: int
+    total_subjects: int
+    total_audit_logs: int
+
+@router.get("/stats", response_model=AdminStatsResponse)
+async def get_admin_stats(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    total_questions = await db.scalar(select(func.count()).select_from(QuestionDb)) or 0
+    total_subjects = await db.scalar(select(func.count()).select_from(SubjectDb)) or 0
+    total_audit_logs = await db.scalar(select(func.count()).select_from(AuditLogDb)) or 0
+
+    return AdminStatsResponse(
+        total_questions=total_questions,
+        total_subjects=total_subjects,
+        total_audit_logs=total_audit_logs
+    )
+
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -79,6 +566,30 @@ async def upsert_question(
     )
 
     return question
+
+
+class BulkDeletePayload(BaseModel):
+    question_ids: list[UUID]
+
+@router.delete("/questions/bulk", status_code=204)
+async def bulk_delete_questions(
+    payload: BulkDeletePayload,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    """Delete multiple questions (admin only)."""
+    deleted_count = await question_repo.delete_questions(db, payload.question_ids)
+    
+    # Write audit log for each deleted question
+    for q_id in payload.question_ids:
+        await log_admin_action(
+            db=db,
+            admin_id=admin.id,
+            table_name="questions",
+            record_id=q_id,
+            action="DELETE"
+        )
+    return
 
 
 # ──────────────────────────────────────────────────────────────────────────────

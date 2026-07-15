@@ -36,7 +36,12 @@ async def get_current_user(
             
         app_metadata = sb_user.app_metadata or {}
         role = app_metadata.get("role", "user")
-        subscription_status = app_metadata.get("subscription_status", "free")
+        
+        # Admins get an automatic "active" subscription to bypass paywalls
+        if role == "admin":
+            subscription_status = "active"
+        else:
+            subscription_status = app_metadata.get("subscription_status", "free")
         
         return User(
             id=sb_user.id, 

@@ -114,4 +114,17 @@ export const adminApi = {
 
   deleteSubtopic: (subtopicId: string, token: string) =>
     adminFetch<void>(`/api/v1/admin/subtopics/${subtopicId}`, { method: 'DELETE' }, token),
+
+  deleteQuestions: (questionIds: string[], token: string) =>
+    adminFetch<void>(`/api/v1/admin/questions/bulk`, { 
+      method: 'DELETE',
+      body: JSON.stringify({ question_ids: questionIds }) 
+    }, token),
+
+  getStats: (token: string) =>
+    adminFetch<{
+      total_questions: number
+      total_subjects: number
+      total_audit_logs: number
+    }>('/api/v1/admin/stats', {}, token),
 }

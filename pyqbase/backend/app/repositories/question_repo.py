@@ -81,5 +81,18 @@ async def upsert_question(
 
 
 async def list_questions(db: AsyncSession, limit: int = 100, offset: int = 0) -> list[QuestionDb]:
-    result = await db.execute(select(QuestionDb).order_by(QuestionDb.created_at.desc()).limit(limit).offset(offset))
-    return result.scalars().all()
+    stmt = select(QuestionDb).order_by(QuestionDb.created_at.desc()).limit(limit).offset(offset)
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def delete_questions(db: AsyncSession, question_ids: list[UUID]) -> int:
+    """
+    Deletes multiple questions by their IDs.
+    Returns the number of deleted rows.
+    """
+    from sqlalchemy import delete
+    stmt = delete(QuestionDb).where(QuestionDb.id.in_(question_ids))
+    result = await db.execute(stmt)
+    await db.commit()
+    return result.rowcount

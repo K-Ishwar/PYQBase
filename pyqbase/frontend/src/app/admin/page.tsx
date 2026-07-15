@@ -1,10 +1,29 @@
+'use client'
+
 import Link from 'next/link'
+import { useQuery } from '@tanstack/react-query'
+import { apiClient } from '@/lib/api-client'
+
+interface AdminStats {
+  total_questions: number
+  total_subjects: number
+  total_audit_logs: number
+}
 
 export default function AdminDashboard() {
+  const { data: statsData, isLoading } = useQuery<AdminStats>({
+    queryKey: ['admin-stats'],
+    queryFn: async () => {
+      const res = await apiClient('/api/v1/admin/stats')
+      if (!res.ok) throw new Error('Failed to fetch stats')
+      return res.json()
+    }
+  })
+
   const stats = [
-    { label: 'Total Questions', value: '—', href: '/admin/questions' },
-    { label: 'Subjects', value: '—', href: '/admin/taxonomy' },
-    { label: 'Audit Logs', value: '—', href: '#' },
+    { label: 'Total Questions', value: isLoading ? '...' : statsData?.total_questions ?? '—', href: '/admin/questions' },
+    { label: 'Subjects', value: isLoading ? '...' : statsData?.total_subjects ?? '—', href: '/admin/taxonomy' },
+    { label: 'Audit Logs', value: isLoading ? '...' : statsData?.total_audit_logs ?? '—', href: '#' },
   ]
 
   return (
