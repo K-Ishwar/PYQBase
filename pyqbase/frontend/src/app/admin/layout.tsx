@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, HelpCircle, Layers, UploadCloud } from 'lucide-react'
+import { LayoutDashboard, HelpCircle, Layers, UploadCloud, Users } from 'lucide-react'
 
 async function getAdminUser() {
   const cookieStore = cookies()
@@ -47,6 +47,7 @@ export default async function AdminLayout({
         </div>
         <nav className="p-4 space-y-2">
           <AdminNavLink href="/admin" label="Dashboard" icon={<LayoutDashboard className="w-5 h-5" />} />
+          <AdminNavLink href="/admin/users" label="Users" icon={<Users className="w-5 h-5" />} />
           <AdminNavLink href="/admin/questions" label="Questions" icon={<HelpCircle className="w-5 h-5" />} />
           <AdminNavLink href="/admin/taxonomy" label="Taxonomy" icon={<Layers className="w-5 h-5" />} />
           <AdminNavLink href="/admin/ingestion" label="Bulk Ingestion" icon={<UploadCloud className="w-5 h-5" />} />

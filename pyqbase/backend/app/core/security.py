@@ -20,6 +20,8 @@ class User(BaseModel):
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
 ) -> User:
+    sys.stderr.write(f"credentials: {credentials}\n")
+    sys.stderr.flush()
     if not credentials:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 

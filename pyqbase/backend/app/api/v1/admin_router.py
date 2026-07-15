@@ -702,3 +702,67 @@ async def delete_subtopic(
     if not deleted:
         raise HTTPException(status_code=404, detail="Subtopic not found")
     await log_admin_action(db, admin.id, "subtopics", subtopic_id, "DELETE")
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# USERS
+# ──────────────────────────────────────────────────────────────────────────────
+
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
+from sqlalchemy import select, func, cast, String
+
+class UserResponse(BaseModel):
+    id: UUID
+    email: str
+    role: str
+    subscription_status: str
+    trial_ends_at: Optional[datetime]
+    created_at: datetime
+
+class UserStatsResponse(BaseModel):
+    total_users: int
+    subscribed_users: int
+    admin_users: int
+
+@router.get("/users/stats", response_model=UserStatsResponse)
+async def get_user_stats(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    from app.models.user import UserDb
+    
+    total = await db.scalar(select(func.count(UserDb.id)))
+    subscribed = await db.scalar(select(func.count(UserDb.id)).where(cast(UserDb.subscription_status, String) == "premium"))
+    admins = await db.scalar(select(func.count(UserDb.id)).where(cast(UserDb.role, String) == "admin"))
+    
+    return UserStatsResponse(
+        total_users=total or 0,
+        subscribed_users=subscribed or 0,
+        admin_users=admins or 0,
+    )
+
+@router.get("/users", response_model=list[UserResponse])
+async def list_users(
+    limit: int = 100,
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    from app.models.user import UserDb
+    
+    result = await db.execute(select(UserDb).order_by(UserDb.created_at.desc()).limit(limit).offset(offset))
+    users = result.scalars().all()
+    
+    return [
+        UserResponse(
+            id=u.id,
+            email=u.email,
+            role=u.role,
+            subscription_status=u.subscription_status,
+            trial_ends_at=u.trial_ends_at,
+            created_at=u.created_at,
+        )
+        for u in users
+    ]
