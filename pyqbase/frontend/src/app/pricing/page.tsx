@@ -1,5 +1,6 @@
 "use client";
 
+import { apiClient } from "@/lib/api-client";
 import { useState } from "react";
 import { Check } from "lucide-react";
 import Script from "next/script";
@@ -35,15 +36,11 @@ export default function PricingPage() {
       }
 
       // 1. Create subscription on backend
-      const res = await fetch("http://localhost:8000/api/v1/payments/create-subscription", {
+      const res = await apiClient("/api/v1/payments/create-subscription", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
         body: JSON.stringify({ plan_id: planId }),
       });
-      
+
       if (!res.ok) {
         throw new Error("Failed to initialize payment");
       }

@@ -21,6 +21,8 @@ class SubjectHeatmapResponse(BaseModel):
     topics: List[TopicHeatmapData]
 
 
+
+
 class ExamStatsResponse(BaseModel):
     exam: str
     total_questions: int
@@ -129,15 +131,14 @@ async def get_exam_subjects(
     Returns a list of subject names that have questions for a specific exam.
     """
     from app.models.question import QuestionDb
-    from app.models.taxonomy import SubtopicDb, TopicDb, SubjectDb
+    from app.models.taxonomy import TopicDb, SubjectDb
     from sqlalchemy import select
 
     stmt = (
         select(SubjectDb.name)
         .distinct()
         .join(TopicDb, SubjectDb.id == TopicDb.subject_id)
-        .join(SubtopicDb, TopicDb.id == SubtopicDb.topic_id)
-        .join(QuestionDb, SubtopicDb.id == QuestionDb.subtopic_id)
+        .join(QuestionDb, TopicDb.id == QuestionDb.topic_id)
         .where(QuestionDb.exam == exam_name)
     )
     result = await db.execute(stmt)

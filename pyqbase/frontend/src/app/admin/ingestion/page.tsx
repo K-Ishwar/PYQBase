@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { apiClient } from "@/lib/api-client"
 
@@ -8,6 +8,8 @@ export default function IngestionUploadPage() {
   const [exam, setExam] = useState("UPSC CSE")
   const [year, setYear] = useState(new Date().getFullYear())
   const [paper, setPaper] = useState("GS Paper 1")
+  const [subjectId, setSubjectId] = useState("")
+  const [subjects, setSubjects] = useState<any[]>([])
   const [paperFile, setPaperFile] = useState<File | null>(null)
   const [ingestionMode, setIngestionMode] = useState<"file" | "text">("file")
   const [paperText, setPaperText] = useState("")
@@ -16,6 +18,14 @@ export default function IngestionUploadPage() {
   const [error, setError] = useState("")
   const [debugInfo, setDebugInfo] = useState<any>(null)
   const [showDebug, setShowDebug] = useState(false)
+
+  useEffect(() => {
+    // Fetch subjects
+    apiClient("/api/v1/taxonomy/subjects")
+      .then(res => res.json())
+      .then(data => setSubjects(data))
+      .catch(err => console.error("Failed to load subjects", err))
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,6 +55,10 @@ export default function IngestionUploadPage() {
 
     if (answerKeyFile) {
       formData.append("answer_key_file", answerKeyFile)
+    }
+
+    if (subjectId) {
+      formData.append("subject_id", subjectId)
     }
 
     try {
@@ -237,7 +251,7 @@ export default function IngestionUploadPage() {
           </div>
         )}
         
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium">Exam</label>
             <select value={exam} onChange={(e) => setExam(e.target.value)} className="w-full p-2 border rounded-md" required>
@@ -254,6 +268,15 @@ export default function IngestionUploadPage() {
           <div className="space-y-2">
             <label className="text-sm font-medium">Paper Name</label>
             <input type="text" value={paper} onChange={(e) => setPaper(e.target.value)} className="w-full p-2 border rounded-md" required />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Subject (Optional)</label>
+            <select value={subjectId} onChange={(e) => setSubjectId(e.target.value)} className="w-full p-2 border rounded-md bg-muted/30">
+              <option value="">Auto-detect by AI</option>
+              {subjects.map(sub => (
+                <option key={sub.id} value={sub.id}>{sub.name}</option>
+              ))}
+            </select>
           </div>
         </div>
 

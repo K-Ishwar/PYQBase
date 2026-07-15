@@ -4,18 +4,23 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { BookOpen } from "lucide-react"
 
+import { apiClient } from "@/lib/api-client"
+
 export default function SubjectsPage() {
   const [subjects, setSubjects] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/v1/taxonomy/subjects')
+    apiClient('/api/v1/taxonomy/subjects')
       .then(res => res.json())
       .then(data => {
         setSubjects(data)
         setLoading(false)
       })
-      .catch(() => setLoading(false))
+      .catch((err) => {
+        console.error("Failed to fetch subjects:", err)
+        setLoading(false)
+      })
   }, [])
 
   return (

@@ -18,6 +18,8 @@ interface SubjectHeatmapResponse {
   topics: TopicHeatmapData[]
 }
 
+import { apiClient } from "@/lib/api-client"
+
 export default function SubjectHeatmapPage() {
   const { id } = useParams()
   const [data, setData] = useState<SubjectHeatmapResponse | null>(null)
@@ -26,7 +28,7 @@ export default function SubjectHeatmapPage() {
 
   useEffect(() => {
     if (!id) return
-    fetch(`http://localhost:8000/api/v1/analytics/heatmaps/${id}`)
+    apiClient(`/api/v1/analytics/heatmaps/${id}`)
       .then(res => {
         if (!res.ok) throw new Error("Failed to load heatmap")
         return res.json()

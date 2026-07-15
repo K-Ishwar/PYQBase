@@ -6,7 +6,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params
   
   try {
-    const res = await fetch(`http://localhost:8000/api/v1/questions/${id}`)
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
+    const res = await fetch(`${apiUrl}/api/v1/questions/${id}`)
     if (!res.ok) throw new Error('Failed to fetch')
     const question = await res.json()
     

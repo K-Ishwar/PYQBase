@@ -664,42 +664,7 @@ async def delete_topic(
     await log_admin_action(db, admin.id, "topics", topic_id, "DELETE")
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-# TAXONOMY — SUBTOPICS
-# ──────────────────────────────────────────────────────────────────────────────
 
-@router.get("/topics/{topic_id}/subtopics", response_model=list[SubtopicResponse])
-async def list_subtopics(
-    topic_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_admin_user),
-):
-    return await taxonomy_repo.list_subtopics(db, topic_id)
-
-
-@router.post("/topics/{topic_id}/subtopics", response_model=SubtopicResponse, status_code=201)
-async def create_subtopic(
-    topic_id: UUID,
-    payload: SubtopicCreate,
-    db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_admin_user),
-):
-    subtopic = await taxonomy_repo.get_or_create_subtopic(db, topic_id, payload.name)
-    await log_admin_action(db, admin.id, "subtopics", subtopic.id, "CREATE_OR_GET",
-                           new_payload={"name": subtopic.name, "topic_id": str(topic_id)})
-    return subtopic
-
-
-@router.delete("/subtopics/{subtopic_id}", status_code=204)
-async def delete_subtopic(
-    subtopic_id: UUID,
-    db: AsyncSession = Depends(get_db),
-    admin: User = Depends(get_admin_user),
-):
-    deleted = await taxonomy_repo.delete_subtopic(db, subtopic_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Subtopic not found")
-    await log_admin_action(db, admin.id, "subtopics", subtopic_id, "DELETE")
 
 
 # ──────────────────────────────────────────────────────────────────────────────

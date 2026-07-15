@@ -38,7 +38,7 @@ export interface QuestionUpsertPayload {
   has_image: boolean
   image_url?: string | null
   parse_confidence?: number | null
-  subtopic_id: string
+  topic_id: string
   manual_review_approved?: boolean
 }
 
@@ -54,7 +54,7 @@ export interface QuestionResponse {
   has_image: boolean
   image_url?: string
   parse_confidence?: number
-  subtopic_id: string
+  topic_id: string
   elo_rating: number
   created_at: string
 }
@@ -99,21 +99,6 @@ export const adminApi = {
   deleteTopic: (topicId: string, token: string) =>
     adminFetch<void>(`/api/v1/admin/topics/${topicId}`, { method: 'DELETE' }, token),
 
-  // Subtopics
-  listSubtopics: (topicId: string, token: string) =>
-    adminFetch<{ id: string; topic_id: string; name: string }[]>(
-      `/api/v1/admin/topics/${topicId}/subtopics`, {}, token
-    ),
-
-  createSubtopic: (topicId: string, name: string, token: string) =>
-    adminFetch<{ id: string; topic_id: string; name: string }>(
-      `/api/v1/admin/topics/${topicId}/subtopics`,
-      { method: 'POST', body: JSON.stringify({ name }) },
-      token
-    ),
-
-  deleteSubtopic: (subtopicId: string, token: string) =>
-    adminFetch<void>(`/api/v1/admin/subtopics/${subtopicId}`, { method: 'DELETE' }, token),
 
   deleteQuestions: (questionIds: string[], token: string) =>
     adminFetch<void>(`/api/v1/admin/questions/bulk`, { 

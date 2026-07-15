@@ -7,7 +7,7 @@ import { QuestionTags } from "@/components/ui/QuestionTags"
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Subject { id: string; name: string }
 interface Topic { id: string; name: string; subject_id: string }
-interface Subtopic { id: string; name: string; topic_id: string }
+
 interface Question {
   id: string
   question_number: number
@@ -23,7 +23,6 @@ interface Question {
   reviewer_notes?: string
   subject_id?: string | null
   topic_id?: string | null
-  subtopic_id?: string | null
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -64,16 +63,10 @@ export default function ReviewBatchPage() {
   const [error, setError] = useState("")
   const [duplicates, setDuplicates] = useState<any[]>([]) // Questions flagged as duplicates after publish
 
-  // Bulk update taxonomy state
-  const [bulkSubjectId, setBulkSubjectId] = useState("")
-  const [bulkTopicId, setBulkTopicId] = useState("")
-  const [bulkSubtopicId, setBulkSubtopicId] = useState("")
-  const [isBulkUpdating, setIsBulkUpdating] = useState(false)
 
   // Taxonomy data — loaded once and cached
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [topicsMap, setTopicsMap] = useState<Record<string, Topic[]>>({}) // subject_id → topics[]
-  const [subtopicsMap, setSubtopicsMap] = useState<Record<string, Subtopic[]>>({}) // topic_id → subtopics[]
   const [taxonomyReady, setTaxonomyReady] = useState(false)
 
   // Track pending PATCH saves so we show a subtle "saving..." indicator
@@ -84,9 +77,10 @@ export default function ReviewBatchPage() {
 
   const fetchBatchAndQuestions = useCallback(async () => {
     try {
-      const [batchRes, qsRes] = await Promise.all([
+      const [batchRes, qsRes, taxRes] = await Promise.all([
         apiClient(`/api/v1/admin/ingestion/batches/${batch_id}`),
         apiClient(`/api/v1/admin/ingestion/batches/${batch_id}/staged`),
+        apiClient(`/api/v1/taxonomy/all`)
       ])
       if (batchRes.ok) {
         const b = await batchRes.json()
@@ -94,9 +88,18 @@ export default function ReviewBatchPage() {
       }
       if (qsRes.ok) {
         const data: Question[] = await qsRes.json()
-        // Don't redirect if empty — batch may still be parsing/inserting questions.
-        // Only redirect back if batch status is 'completed' or 'failed' AND no questions remain.
         setQuestions(data)
+      }
+      if (taxRes.ok) {
+        const taxData = await taxRes.json()
+        setSubjects(taxData.subjects)
+        const newTopicsMap: Record<string, Topic[]> = {}
+        taxData.topics.forEach((t: Topic) => {
+          if (!newTopicsMap[t.subject_id]) newTopicsMap[t.subject_id] = []
+          newTopicsMap[t.subject_id].push(t)
+        })
+        setTopicsMap(newTopicsMap)
+        setTaxonomyReady(true)
       }
     } catch (err) {
       console.error("fetchBatchAndQuestions error:", err)
@@ -111,7 +114,7 @@ export default function ReviewBatchPage() {
       const res = await apiClient("/api/v1/taxonomy/all")
       if (!res.ok) return
       
-      const data: { subjects: Subject[], topics: Topic[], subtopics: Subtopic[] } = await res.json()
+      const data: { subjects: Subject[], topics: Topic[] } = await res.json()
       
       setSubjects(data.subjects)
 
@@ -122,12 +125,7 @@ export default function ReviewBatchPage() {
       })
       setTopicsMap(newTopicsMap)
 
-      const newSubtopicsMap: Record<string, Subtopic[]> = {}
-      data.subtopics.forEach(st => {
-        if (!newSubtopicsMap[st.topic_id]) newSubtopicsMap[st.topic_id] = []
-        newSubtopicsMap[st.topic_id].push(st)
-      })
-      setSubtopicsMap(newSubtopicsMap)
+
       
       setTaxonomyReady(true)
     } catch (err) {
@@ -137,7 +135,6 @@ export default function ReviewBatchPage() {
 
   useEffect(() => {
     fetchBatchAndQuestions()
-    fetchAllTaxonomy()
   }, [])
 
   // Poll while AI is processing or while no questions have loaded yet
@@ -187,12 +184,11 @@ export default function ReviewBatchPage() {
     patchQuestion(q.id, {
       subject_id: newSubjectId || null,
       topic_id: null,
-      subtopic_id: null,
     })
   }, [patchQuestion])
 
   const handleTopicChange = useCallback((q: Question, newTopicId: string) => {
-    patchQuestion(q.id, { topic_id: newTopicId || null, subtopic_id: null })
+    patchQuestion(q.id, { topic_id: newTopicId || null })
   }, [patchQuestion])
 
   // ── Bulk approve — only questions with complete taxonomy ──────────────────
@@ -200,16 +196,17 @@ export default function ReviewBatchPage() {
     const toApprove = questions.filter(
       q => q.review_status !== "approved"
         && q.review_status !== "rejected"
-        && q.subject_id && q.topic_id && q.subtopic_id // Must have full taxonomy
+        && q.subject_id && q.topic_id // Must have full taxonomy
+        && q.correct_option           // Must have correct answer
     )
-    const missingTaxonomy = questions.filter(
+    const missingData = questions.filter(
       q => q.review_status !== "approved"
         && q.review_status !== "rejected"
-        && (!q.subject_id || !q.topic_id || !q.subtopic_id)
+        && (!q.subject_id || !q.topic_id || !q.correct_option)
     )
     if (toApprove.length === 0) {
-      if (missingTaxonomy.length > 0) {
-        alert(`No questions can be bulk approved yet — ${missingTaxonomy.length} question(s) are missing Subject/Topic/Subtopic. Please categorize them first.`)
+      if (missingData.length > 0) {
+        alert(`No questions can be bulk approved yet — ${missingData.length} question(s) are missing Subject/Topic or Correct Answer. Please categorize and assign answers first.`)
       } else {
         alert("No pending questions to approve.")
       }
@@ -233,8 +230,8 @@ export default function ReviewBatchPage() {
         const data = await res.json().catch(() => ({}))
         throw new Error(data.detail || "Bulk approve failed")
       }
-      const skippedMsg = missingTaxonomy.length > 0
-        ? ` (${missingTaxonomy.length} skipped — missing taxonomy)`
+      const skippedMsg = missingData.length > 0
+        ? ` (${missingData.length} skipped — missing taxonomy or answer)`
         : ""
       alert(`✓ Bulk approved ${toApprove.length} questions.${skippedMsg}`)
     } catch (err: any) {
@@ -245,52 +242,6 @@ export default function ReviewBatchPage() {
     }
   }, [questions])
 
-  // ── Bulk update taxonomy ──────────────────────────────────────────────────
-  const handleBulkUpdateTaxonomy = useCallback(async () => {
-    const uncategorizedIds = questions
-      .filter(q => q.review_status !== "approved" && q.review_status !== "rejected")
-      .filter(q => !q.subject_id || !q.topic_id || !q.subtopic_id)
-      .map(q => q.id)
-    
-    if (uncategorizedIds.length === 0) return alert("No uncategorized questions to update.")
-    if (!bulkSubjectId) return alert("Select at least a Subject to apply.")
-
-    setIsBulkUpdating(true)
-    // Optimistic
-    setQuestions(prev => prev.map(q => {
-      if (uncategorizedIds.includes(q.id)) {
-        return {
-          ...q,
-          subject_id: bulkSubjectId || q.subject_id,
-          topic_id: bulkTopicId || (bulkSubjectId ? null : q.topic_id),
-          subtopic_id: bulkSubtopicId || (bulkTopicId ? null : q.subtopic_id)
-        }
-      }
-      return q
-    }))
-
-    try {
-      const res = await apiClient(`/api/v1/admin/ingestion/staged/bulk-update`, {
-        method: "POST",
-        body: JSON.stringify({
-          ids: uncategorizedIds,
-          subject_id: bulkSubjectId || null,
-          topic_id: bulkTopicId || null,
-          subtopic_id: bulkSubtopicId || null
-        })
-      })
-      if (!res.ok) throw new Error("Bulk update failed")
-      alert(`Applied taxonomy to ${uncategorizedIds.length} uncategorized questions.`)
-      // reset bulk states
-      setBulkSubjectId("")
-      setBulkTopicId("")
-      setBulkSubtopicId("")
-    } catch (err: any) {
-      alert(err.message)
-    } finally {
-      setIsBulkUpdating(false)
-    }
-  }, [questions, bulkSubjectId, bulkTopicId, bulkSubtopicId])
 
   // ── Run AI Categorization ─────────────────────────────────────────────────
   const handleRunAI = useCallback(async () => {
@@ -350,8 +301,8 @@ export default function ReviewBatchPage() {
   }, [batch_id])
 
   // ── Derived state ──────────────────────────────────────────────────────────
-  const isAIProcessing = batch?.status === "parsing" || batch?.status === "parsed"
-  const processedCount = questions.filter(q => q.subject_id !== null).length
+  const isAIProcessing = batch?.status === "parsing" || isStartingAI
+  const processedCount = questions.filter(q => q.subject_id !== null && q.topic_id !== null).length
   const progressPercent = questions.length > 0 ? Math.round((processedCount / questions.length) * 100) : 0
   const approvedCount = questions.filter(q => q.review_status === "approved").length
   const pendingCount = questions.filter(q => q.review_status === "pending" || q.review_status === "needs_edit").length
@@ -407,7 +358,7 @@ export default function ReviewBatchPage() {
           </p>
         </div>
         <div className="flex gap-3 flex-wrap">
-          {batch?.status === "parsed" && (
+          {(batch?.status === "parsed" || processedCount < questions.length) && (
             <button
               onClick={handleRunAI}
               disabled={isStartingAI}
@@ -433,79 +384,26 @@ export default function ReviewBatchPage() {
         </div>
       </div>
 
-      {/* ── AI Progress Bar ── */}
-      {isAIProcessing && questions.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl space-y-2">
-          <div className="flex justify-between text-sm font-medium text-blue-800">
-            <span>🤖 AI is categorizing questions...</span>
+      {/* ── AI Progress Bar / Uncategorized Alert ── */}
+      {(isAIProcessing || processedCount < questions.length) && questions.length > 0 && (
+        <div className={`border p-4 rounded-xl space-y-2 ${processedCount < questions.length && !isAIProcessing ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'}`}>
+          <div className={`flex justify-between text-sm font-medium ${processedCount < questions.length && !isAIProcessing ? 'text-amber-800' : 'text-blue-800'}`}>
+            <span>
+              {isAIProcessing 
+                ? "🤖 AI is categorizing questions..." 
+                : "⚠️ Some questions need AI categorization (or manual selection)"}
+            </span>
             <span>{processedCount} / {questions.length} ({progressPercent}%)</span>
           </div>
-          <div className="w-full bg-blue-100 rounded-full h-2.5">
+          <div className={`w-full rounded-full h-2.5 ${processedCount < questions.length && !isAIProcessing ? 'bg-amber-200' : 'bg-blue-100'}`}>
             <div
-              className="bg-blue-500 h-2.5 rounded-full transition-all duration-700 ease-in-out"
+              className={`${processedCount < questions.length && !isAIProcessing ? 'bg-amber-500' : 'bg-blue-500'} h-2.5 rounded-full transition-all duration-700 ease-in-out`}
               style={{ width: `${progressPercent}%` }}
             />
           </div>
         </div>
       )}
 
-      {/* ── Bulk Taxonomy Update Panel ── */}
-      {taxonomyReady && pendingCount > 0 && (
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-sm">
-          <h3 className="text-sm font-bold text-slate-800 mb-3">⚡ Bulk Apply Taxonomy to Uncategorized Questions</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">Subject</label>
-              <select
-                className="w-full text-sm p-2 border rounded-lg bg-background"
-                value={bulkSubjectId}
-                onChange={(e) => {
-                  setBulkSubjectId(e.target.value)
-                  setBulkTopicId("")
-                  setBulkSubtopicId("")
-                }}
-              >
-                <option value="">— Select —</option>
-                {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">Topic</label>
-              <select
-                className="w-full text-sm p-2 border rounded-lg bg-background disabled:opacity-50"
-                value={bulkTopicId}
-                disabled={!bulkSubjectId}
-                onChange={(e) => {
-                  setBulkTopicId(e.target.value)
-                  setBulkSubtopicId("")
-                }}
-              >
-                <option value="">— Select —</option>
-                {(topicsMap[bulkSubjectId] || []).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase block mb-1">Subtopic</label>
-              <select
-                className="w-full text-sm p-2 border rounded-lg bg-background disabled:opacity-50"
-                value={bulkSubtopicId}
-                disabled={!bulkTopicId}
-                onChange={(e) => setBulkSubtopicId(e.target.value)}
-              >
-                <option value="">— Select —</option>
-                {(subtopicsMap[bulkTopicId] || []).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
-            <button
-              onClick={handleBulkUpdateTaxonomy}
-              disabled={!bulkSubjectId || isBulkUpdating}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium transition-colors w-full"
-            >
-              {isBulkUpdating ? "Applying..." : "Apply to Uncategorized"}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* ── Error ── */}
       {error && (
@@ -616,7 +514,6 @@ export default function ReviewBatchPage() {
         {questions.map((q) => {
           const isSaving = savingIds.has(q.id)
           const topicsForSubject = (q.subject_id && topicsMap[q.subject_id]) || []
-          const subtopicsForTopic = (q.topic_id && subtopicsMap[q.topic_id]) || []
           const isApproved = q.review_status === "approved"
 
           return (
@@ -644,7 +541,7 @@ export default function ReviewBatchPage() {
                 <div className="flex gap-2">
                   {/* Approve requires full taxonomy */}
                   {(() => {
-                    const canApprove = !!(q.subject_id && q.topic_id && q.subtopic_id && q.correct_option)
+                    const canApprove = !!(q.subject_id && q.topic_id && q.correct_option)
                     return (
                       <div className="relative group">
                         <button
@@ -656,7 +553,7 @@ export default function ReviewBatchPage() {
                         </button>
                         {!canApprove && !isApproved && (
                           <div className="absolute bottom-full left-0 mb-1 w-48 bg-gray-900 text-white text-xs rounded-lg px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-                            {!q.subject_id ? "Select Subject first" : !q.topic_id ? "Select Topic first" : !q.subtopic_id ? "Select Subtopic first" : "Select correct answer"}
+                            {!q.subject_id ? "Select Subject first" : !q.topic_id ? "Select Topic first" : "Select correct answer"}
                           </div>
                         )}
                       </div>
@@ -783,19 +680,6 @@ export default function ReviewBatchPage() {
                         <option value="">— Select Topic —</option>
                         {topicsForSubject.map(t => (
                           <option key={t.id} value={t.id}>{t.name}</option>
-                        ))}
-                      </select>
-
-                      {/* Subtopic */}
-                      <select
-                        className="w-full text-sm p-2 border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-                        value={q.subtopic_id || ""}
-                        disabled={!q.topic_id || !taxonomyReady}
-                        onChange={(e) => patchQuestion(q.id, { subtopic_id: e.target.value || null })}
-                      >
-                        <option value="">— Select Subtopic —</option>
-                        {subtopicsForTopic.map(s => (
-                          <option key={s.id} value={s.id}>{s.name}</option>
                         ))}
                       </select>
                     </div>

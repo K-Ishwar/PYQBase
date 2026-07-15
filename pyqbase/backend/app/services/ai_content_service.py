@@ -93,6 +93,8 @@ Output format (strict JSON):
 async def enrich_batch_chunk(
     questions: List[StagedQuestionDb],
     batch: IngestionBatchDb,
+    subject_name: Optional[str] = None,
+    allowed_topics: Optional[List[str]] = None,
 ) -> Dict[int, Dict[str, str]]:
     """
     Send a chunk of questions to Groq in a single call.
@@ -107,7 +109,48 @@ async def enrich_batch_chunk(
         lines.append(f"Q{q.question_number}: {stem}")
     user_msg = "\n".join(lines)
 
-    sys_prompt = _BATCH_SYSTEM_PROMPT
+    if subject_name and allowed_topics:
+        topic_list_str = ", ".join(f'"{t}"' for t in allowed_topics)
+        sys_prompt = f"""You are an expert academic classification system for competitive exams.
+
+Given a list of multiple-choice questions and the exam context, classify EACH question into a topic.
+
+Rules:
+- The "subject" MUST strictly be "{subject_name}".
+- For the "topic", preferably select from the following existing topics if they fit well: {topic_list_str}.
+- However, you are FREE to invent and provide a new specific topic name if the question does not fit any of the existing topics. Do not restrict yourself.
+- Return a JSON object with key "results" containing an array, one entry per question.
+- Each entry MUST have: "q" (question number), "subject", "topic"
+- The "q" field MUST exactly match the integer number provided in the 'Q#' prefix of each question.
+- Do NOT skip any questions. Do NOT add extra fields.
+
+Output format (strict JSON):
+{{
+  "results": [
+    {{"q": 35, "subject": "{subject_name}", "topic": "{allowed_topics[0] if allowed_topics else 'Topic'}"}}
+  ]
+}}"""
+    elif subject_name:
+        sys_prompt = f"""You are an expert academic classification system for competitive exams.
+
+Given a list of multiple-choice questions and the exam context, classify EACH question into a topic.
+
+Rules:
+- The "subject" MUST strictly be "{subject_name}".
+- Generate a specific topic based on standard academic curriculums. You may invent a suitable topic name.
+- Return a JSON object with key "results" containing an array, one entry per question.
+- Each entry MUST have: "q" (question number), "subject", "topic"
+- The "q" field MUST exactly match the integer number provided in the 'Q#' prefix of each question.
+- Do NOT skip any questions. Do NOT add extra fields.
+
+Output format (strict JSON):
+{{
+  "results": [
+    {{"q": 35, "subject": "{subject_name}", "topic": "Generated Topic Name"}}
+  ]
+}}"""
+    else:
+        sys_prompt = _BATCH_SYSTEM_PROMPT
 
     # ~80 tokens output per question (long subject/topic names need more budget)
     max_output_tokens = len(questions) * 85 + 150
@@ -153,10 +196,10 @@ async def enrich_batch(batch_id: UUID):
 
             logger.info(f"[enrich_batch] {len(questions)} questions to enrich")
 
-            # ── Filter: only process questions with sufficient confidence ──
-            processable = [q for q in questions if (q.parse_confidence or 0) >= 0.90]
-            skipped = [q for q in questions if (q.parse_confidence or 0) < 0.90]
-            logger.info(f"[enrich_batch] {len(processable)} processable, {len(skipped)} skipped (low confidence)")
+            # ── Filter: only process questions with sufficient confidence AND no topic assigned ──
+            processable = [q for q in questions if (q.parse_confidence or 0) >= 0.90 and not q.topic_id]
+            skipped = [q for q in questions if not ((q.parse_confidence or 0) >= 0.90 and not q.topic_id)]
+            logger.info(f"[enrich_batch] {len(processable)} processable, {len(skipped)} skipped (low confidence or already categorized)")
 
             # ── Chunk into groups to stay within token limits ──
             chunks = [
@@ -164,12 +207,28 @@ async def enrich_batch(batch_id: UUID):
                 for i in range(0, len(processable), BATCH_CHUNK_SIZE)
             ]
 
+            # ── Check if subject_id is pre-assigned ──
+            preassigned_subject_id = processable[0].subject_id if processable else None
+            subject_name = None
+            allowed_topics = None
+            
+            if preassigned_subject_id:
+                from app.models.taxonomy import SubjectDb, TopicDb
+                from sqlalchemy import select
+                sub = (await db.execute(select(SubjectDb).where(SubjectDb.id == preassigned_subject_id))).scalar_one_or_none()
+                if sub:
+                    subject_name = sub.name
+                    topics_res = await db.execute(select(TopicDb.name).where(TopicDb.subject_id == preassigned_subject_id))
+                    topics_list = list(topics_res.scalars().all())
+                    if topics_list:
+                        allowed_topics = topics_list
+
             # ── Call Groq once per chunk ──
             all_mappings: Dict[int, Dict[str, str]] = {}
             for chunk_idx, chunk in enumerate(chunks):
                 logger.info(f"[enrich_batch] Calling Groq for chunk {chunk_idx + 1}/{len(chunks)} ({len(chunk)} questions)")
                 try:
-                    chunk_mapping = await enrich_batch_chunk(chunk, batch)
+                    chunk_mapping = await enrich_batch_chunk(chunk, batch, subject_name, allowed_topics)
                     all_mappings.update(chunk_mapping)
                     logger.info(f"[enrich_batch] Chunk {chunk_idx + 1} done, got {len(chunk_mapping)} classifications")
                 except Exception as chunk_err:

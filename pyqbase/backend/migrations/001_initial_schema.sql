@@ -184,8 +184,7 @@ WITH topic_counts AS (
         t.subject_id,
         COUNT(q.id) AS question_count
     FROM topics t
-    LEFT JOIN subtopics st ON t.id = st.topic_id
-    LEFT JOIN questions q ON st.id = q.subtopic_id
+    LEFT JOIN questions q ON t.id = q.topic_id
     GROUP BY t.id, t.name, t.subject_id
 ),
 total_counts AS (

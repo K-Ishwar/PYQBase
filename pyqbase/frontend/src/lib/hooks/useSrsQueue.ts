@@ -6,7 +6,6 @@ export interface SrsQueueItem {
   exam: string
   subject_name: string
   topic_name: string
-  subtopic_name: string
   difficulty_label: string
   elo_rating: number
   next_review_date: string

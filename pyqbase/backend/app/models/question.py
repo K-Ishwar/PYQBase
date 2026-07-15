@@ -89,7 +89,7 @@ class QuestionResponse(BaseModel):
     has_image: bool
     image_url: Optional[str]
     parse_confidence: Optional[float]
-    topic_id: UUID
+    topic_id: Optional[UUID] = None
     subject_name: Optional[str] = None
     topic_name: Optional[str] = None
     elo_rating: int
@@ -112,7 +112,7 @@ class QuestionListItem(BaseModel):
     question_type: str
     has_image: bool
     image_url: Optional[str]
-    topic_id: UUID
+    topic_id: Optional[UUID] = None
     subject_name: Optional[str] = None
     topic_name: Optional[str] = None
     elo_rating: int

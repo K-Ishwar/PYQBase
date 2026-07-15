@@ -31,7 +31,7 @@ OPTION_REGEX = re.compile(r'^[A-D][\.\)]\s*(.+)', re.MULTILINE)
 # Looks for "Answer: X" or "Correct: X"
 ANSWER_REGEX = re.compile(r'^(?:Answer|Correct(?: Option)?):\s*([A-D])', re.IGNORECASE | re.MULTILINE)
 
-async def process_ingestion_batch(batch_id: UUID, paper_path: str, answer_key_path: Optional[str] = None):
+async def process_ingestion_batch(batch_id: UUID, paper_path: str, answer_key_path: Optional[str] = None, subject_id: Optional[UUID] = None):
     """
     Background job to process the uploaded files and populate staged_questions.
     """
@@ -79,6 +79,8 @@ async def process_ingestion_batch(batch_id: UUID, paper_path: str, answer_key_pa
             staged_questions.sort(key=lambda q: q.year or batch.year or 9999)
             for idx, q in enumerate(staged_questions, start=1):
                 q.question_number = idx
+                if subject_id:
+                    q.subject_id = subject_id
 
             # 3. Save to database
             if not staged_questions:

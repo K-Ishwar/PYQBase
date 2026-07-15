@@ -67,6 +67,7 @@ async def upload_paper(
     paper_file: Optional[UploadFile] = File(None),
     paper_text: Optional[str] = Form(None),
     answer_key_file: Optional[UploadFile] = File(None),
+    subject_id: Optional[UUID] = Form(None),
     db: AsyncSession = Depends(get_db),
     admin_user: UserDb = Depends(get_current_admin_user)
 ):
@@ -207,7 +208,7 @@ async def upload_paper(
         # to the request lifecycle, so it survives after the response is sent.
         logger.info(f"Triggering background parsing for batch {batch.id}")
         asyncio.create_task(
-            process_ingestion_batch(batch.id, paper_path, answer_key_path)
+            process_ingestion_batch(batch.id, paper_path, answer_key_path, subject_id)
         )
         
         logger.info(f"Upload successful: batch_id={batch.id}")
@@ -337,7 +338,6 @@ class BulkUpdateRequest(BaseModel):
     ids: list[UUID]
     subject_id: Optional[UUID] = None
     topic_id: Optional[UUID] = None
-    subtopic_id: Optional[UUID] = None
 
 @router.post("/staged/bulk-update")
 async def bulk_update_staged(
@@ -354,8 +354,6 @@ async def bulk_update_staged(
         values['subject_id'] = body.subject_id
     if body.topic_id is not None:
         values['topic_id'] = body.topic_id
-    if body.subtopic_id is not None:
-        values['subtopic_id'] = body.subtopic_id
         
     if not values:
         return {"updated_count": 0}
@@ -402,10 +400,12 @@ async def publish_batch(
         reasons = []
         if not q.correct_option:
             reasons.append("missing correct answer")
-        if not q.subtopic_id:
-            reasons.append("missing Subject/Topic/Subtopic")
+        if not q.topic_id:
+            reasons.append("missing Subject/Topic")
         if reasons:
             invalid.append({"id": str(q.id), "question_number": q.question_number, "reasons": reasons})
+            q.review_status = ReviewStatus.needs_edit
+            q.reviewer_notes = "⚠️ Cannot publish: " + ", ".join(reasons)
         else:
             valid.append(q)
 
@@ -450,7 +450,7 @@ async def publish_batch(
     try:
         for q in clean:
             new_q = QuestionDb(
-                subtopic_id=q.subtopic_id,
+                topic_id=q.topic_id,
                 exam=q.exam if q.exam else batch.exam,
                 year=q.year if q.year else batch.year,
                 paper=batch.paper,

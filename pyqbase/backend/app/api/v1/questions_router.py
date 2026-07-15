@@ -65,20 +65,19 @@ async def get_question(question_id: str, db: AsyncSession = Depends(get_db)):
     Omit correct_option and explanation.
     """
     from app.models.question import QuestionDb
-    from app.models.taxonomy import SubtopicDb, TopicDb, SubjectDb
+    from app.models.taxonomy import TopicDb, SubjectDb
     from sqlalchemy import select
     from fastapi import HTTPException
     
     stmt = (
         select(
             QuestionDb,
-            SubtopicDb.name.label("subtopic_name"),
             TopicDb.name.label("topic_name"),
             SubjectDb.name.label("subject_name")
         )
-        .join(SubtopicDb, QuestionDb.subtopic_id == SubtopicDb.id)
-        .join(TopicDb, SubtopicDb.topic_id == TopicDb.id)
-        .join(SubjectDb, TopicDb.subject_id == SubjectDb.id)
+        .outerjoin(TopicDb, QuestionDb.topic_id == TopicDb.id)
+        .outerjoin(SubjectDb, TopicDb.subject_id == SubjectDb.id)
+
         .where(QuestionDb.id == question_id)
     )
     result = await db.execute(stmt)
@@ -87,7 +86,7 @@ async def get_question(question_id: str, db: AsyncSession = Depends(get_db)):
     if not row:
         raise HTTPException(status_code=404, detail="Question not found")
     
-    question, subtopic_name, topic_name, subject_name = row
+    question, topic_name, subject_name = row
         
     return QuestionDetailResponse(
         id=str(question.id),
@@ -103,7 +102,6 @@ async def get_question(question_id: str, db: AsyncSession = Depends(get_db)):
         elo_rating=question.elo_rating,
         subject_name=subject_name,
         topic_name=topic_name,
-        subtopic_name=subtopic_name,
     )
 
 

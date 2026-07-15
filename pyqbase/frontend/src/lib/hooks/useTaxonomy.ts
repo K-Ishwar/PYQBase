@@ -11,9 +11,6 @@ export interface Topic extends TaxonomyItem {
   subject_id: string
 }
 
-export interface Subtopic extends TaxonomyItem {
-  topic_id: string
-}
 
 export function useSubjects() {
   return useQuery<TaxonomyItem[]>({
@@ -39,18 +36,6 @@ export function useTopics(subjectId?: string) {
   })
 }
 
-export function useSubtopics(topicId?: string) {
-  return useQuery<Subtopic[]>({
-    queryKey: ['subtopics', topicId],
-    queryFn: async () => {
-      if (!topicId) return []
-      const res = await apiClient(`/api/v1/admin/topics/${topicId}/subtopics`)
-      if (!res.ok) throw new Error('Failed to fetch subtopics')
-      return res.json()
-    },
-    enabled: !!topicId,
-  })
-}
 
 // --- Public Endpoints ---
 export function usePublicSubjects() {
@@ -76,17 +61,6 @@ export function usePublicTopics(subjectId: string) {
   })
 }
 
-export function usePublicSubtopics(topicId: string) {
-  return useQuery({
-    queryKey: ['public', 'taxonomy', 'subtopics', topicId],
-    queryFn: async () => {
-      const res = await apiClient(`/api/v1/taxonomy/topics/${topicId}/subtopics`)
-      if (!res.ok) throw new Error('Failed to fetch public subtopics')
-      return res.json()
-    },
-    enabled: !!topicId,
-  })
-}
 
 // Mutations
 export function useCreateSubject() {
@@ -149,32 +123,3 @@ export function useDeleteTopic() {
   })
 }
 
-export function useCreateSubtopic() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async ({ topicId, name }: { topicId: string; name: string }) => {
-      const res = await apiClient(`/api/v1/admin/topics/${topicId}/subtopics`, {
-        method: 'POST',
-        body: JSON.stringify({ name }),
-      })
-      if (!res.ok) throw new Error('Failed to create subtopic')
-      return res.json()
-    },
-    onSuccess: (_, { topicId }) => {
-      queryClient.invalidateQueries({ queryKey: ['subtopics', topicId] })
-    },
-  })
-}
-
-export function useDeleteSubtopic() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await apiClient(`/api/v1/admin/subtopics/${id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Failed to delete subtopic')
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subtopics'] })
-    },
-  })
-}
