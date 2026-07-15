@@ -52,6 +52,10 @@ def _cache_set(key: str, value: SearchResponse) -> None:
         del _CACHE[oldest]
     _CACHE[key] = (time.monotonic(), value)
 
+def clear_search_cache() -> None:
+    """Clear the search cache (e.g. after publishing new questions)."""
+    _CACHE.clear()
+
 
 # ─── Search implementation ────────────────────────────────────────────────────
 
@@ -121,12 +125,12 @@ async def search_questions(
     params: dict = {"limit": limit, "offset": offset}
     rank_col = ""
     joins = """
-        JOIN subtopics st ON q.subtopic_id = st.id
-        JOIN topics t ON st.topic_id = t.id
-        JOIN subjects s ON t.subject_id = s.id
+        LEFT JOIN subtopics st ON q.subtopic_id = st.id
+        LEFT JOIN topics t ON st.topic_id = t.id
+        LEFT JOIN subjects s ON t.subject_id = s.id
     """
     filters = ""
-    order = "ORDER BY q.created_at DESC"
+    order = "ORDER BY q.created_at DESC, q.id ASC"
 
     # ── FTS filter ──────────────────────────────────────────────────────────
     if q and q.strip():

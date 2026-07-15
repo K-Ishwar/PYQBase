@@ -1,0 +1,33 @@
+Sort: year_desc
+Query: None
+Data SQL: 
+        SELECT
+            q.id,
+            q.exam,
+            q.year,
+            q.paper,
+            q.question_number,
+            q.question_stem,
+            q.question_type,
+            q.has_image,
+            q.image_url,
+            q.subtopic_id,
+            q.elo_rating,
+            q.created_at,
+            st.name AS subtopic_name,
+            t.name AS topic_name,
+            s.name AS subject_name
+            
+        FROM questions q
+        
+        LEFT JOIN subtopics st ON q.subtopic_id = st.id
+        LEFT JOIN topics t ON st.topic_id = t.id
+        LEFT JOIN subjects s ON t.subject_id = s.id
+    
+        WHERE 1=1
+        
+        ORDER BY q.year DESC, q.question_number ASC
+        LIMIT :limit OFFSET :offset
+    
+Total Count: 65
+Rows Returned: 10

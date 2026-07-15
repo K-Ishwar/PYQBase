@@ -8,6 +8,8 @@ import asyncio
 from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlmodel import col as sa_col
 
 from app.core.database import get_db
 from app.core.security import get_admin_user as get_current_admin_user
@@ -18,7 +20,6 @@ from app.models.audit_log import AuditLogDb
 from app.repositories import ingestion_repo
 from app.services.ingestion_service import process_ingestion_batch
 from app.schemas.ingestion import StagedQuestionUpdate
-from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -70,12 +71,9 @@ async def upload_paper(
 ):
     """
     Upload a question paper for bulk ingestion.
-    
-    Errors that can occur:
-    - 400: Invalid file format
-    - 401: Not authenticated as admin
-    - 500: Server error (file I/O, database, etc.)
     """
+    paper_path = None
+    answer_key_path = None
     try:
         # Log the upload attempt
         logger.info(f"Upload attempt: exam={exam}, year={year}, paper={paper_metadata}, user={admin_user.email}")
@@ -201,9 +199,9 @@ async def upload_paper(
         logger.error(f"Unexpected error in upload: {e}", exc_info=True)
         # Clean up any uploaded files on error
         try:
-            if 'paper_path' in locals() and os.path.exists(paper_path):
+            if paper_path and os.path.exists(paper_path):
                 os.remove(paper_path)
-            if 'answer_key_path' in locals() and answer_key_path and os.path.exists(answer_key_path):
+            if answer_key_path and os.path.exists(answer_key_path):
                 os.remove(answer_key_path)
         except:
             pass
@@ -241,10 +239,10 @@ async def get_staged_questions(
     db: AsyncSession = Depends(get_db),
     admin_user: UserDb = Depends(get_current_admin_user)
 ):
-    stmt = select(StagedQuestionDb).where(StagedQuestionDb.batch_id == batch_id)
+    stmt = select(StagedQuestionDb).where(sa_col(StagedQuestionDb.batch_id) == batch_id)
     if status:
-        stmt = stmt.where(StagedQuestionDb.review_status == status)
-    stmt = stmt.order_by(StagedQuestionDb.question_number)
+        stmt = stmt.where(sa_col(StagedQuestionDb.review_status) == status)
+    stmt = stmt.order_by(sa_col(StagedQuestionDb.question_number))
     
     result = await db.execute(stmt)
     questions = result.scalars().all()
@@ -281,83 +279,145 @@ async def bulk_approve_staged(
     from app.models.ingestion import StagedQuestionDb as _SQ
     stmt = (
         sa_update(_SQ)
-        .where(_SQ.id.in_(body.ids))
+        .where(sa_col(_SQ.id).in_(body.ids))
         .values(review_status=ReviewStatus.approved)
     )
     await db.execute(stmt)
     await db.commit()
     return {"approved_count": len(body.ids)}
 
+class BulkUpdateRequest(BaseModel):
+    ids: list[UUID]
+    subject_id: Optional[UUID] = None
+    topic_id: Optional[UUID] = None
+    subtopic_id: Optional[UUID] = None
+
+@router.post("/staged/bulk-update")
+async def bulk_update_staged(
+    body: BulkUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    admin_user: UserDb = Depends(get_current_admin_user),
+):
+    """Update taxonomy for all given staged question IDs in one query."""
+    from sqlalchemy import update as sa_update
+    from app.models.ingestion import StagedQuestionDb as _SQ
+    
+    values = {}
+    if body.subject_id is not None:
+        values['subject_id'] = body.subject_id
+    if body.topic_id is not None:
+        values['topic_id'] = body.topic_id
+    if body.subtopic_id is not None:
+        values['subtopic_id'] = body.subtopic_id
+        
+    if not values:
+        return {"updated_count": 0}
+
+    stmt = (
+        sa_update(_SQ)
+        .where(sa_col(_SQ.id).in_(body.ids))
+        .values(**values)
+    )
+    await db.execute(stmt)
+    await db.commit()
+    return {"updated_count": len(body.ids)}
+
+class PublishRequest(BaseModel):
+    force_publish_ids: list[UUID] = []
+
 @router.post("/batches/{batch_id}/publish")
 async def publish_batch(
     batch_id: UUID,
+    body: Optional[PublishRequest] = None,
     db: AsyncSession = Depends(get_db),
     admin_user: UserDb = Depends(get_current_admin_user)
 ):
+    """
+    Publish all approved questions that are ready.
+    - Questions missing taxonomy or correct_option are skipped and returned as invalid.
+    - Duplicate questions (already in DB) are returned separately.
+    - Clean questions are published immediately without waiting for duplicates.
+    """
+    force_publish_ids = body.force_publish_ids if body else []
+    
     batch, questions = await ingestion_repo.get_batch_with_questions(db, batch_id)
     if not batch:
         raise HTTPException(status_code=404, detail="Batch not found")
-        
+
     approved_questions = [q for q in questions if q.review_status == ReviewStatus.approved]
     if not approved_questions:
         raise HTTPException(status_code=400, detail="No approved questions to publish.")
 
-    # Validation: Check only approved questions
+    # ── Separate valid from invalid (missing taxonomy/answer) ──
+    invalid = []
+    valid = []
     for q in approved_questions:
-        if q.correct_option is None:
-            raise HTTPException(status_code=400, detail=f"Cannot publish: Question {q.question_number} is approved but missing a correct option.")
-        if q.subtopic_id is None:
-            raise HTTPException(status_code=400, detail=f"Cannot publish: Question {q.question_number} is missing a Subject/Topic/Subtopic assignment.")
+        reasons = []
+        if not q.correct_option:
+            reasons.append("missing correct answer")
+        if not q.subtopic_id:
+            reasons.append("missing Subject/Topic/Subtopic")
+        if reasons:
+            invalid.append({"id": str(q.id), "question_number": q.question_number, "reasons": reasons})
+        else:
+            valid.append(q)
 
-    # Duplicate Detection
-    duplicate_errors = []
-    for q in approved_questions:
+    # ── Duplicate detection on valid questions only ──
+    duplicates = []
+    clean = []
+    for q in valid:
         q_exam = q.exam if q.exam else batch.exam
         q_year = q.year if q.year else batch.year
-        stem_payload = q.paraphrased_stem.get('en') if q.paraphrased_stem else q.raw_question_stem
-        if isinstance(stem_payload, dict) and 'en' in stem_payload:
-            stem_text = stem_payload['en']
-        elif isinstance(stem_payload, str):
-            stem_text = stem_payload
-        else:
-            stem_text = str(stem_payload)
+        stem_text = q.raw_question_stem or ""
 
+        if q.id in force_publish_ids:
+            clean.append(q)
+            continue
+
+        from sqlalchemy import and_
         stmt = select(QuestionDb).where(
-            QuestionDb.exam == q_exam,
-            QuestionDb.year == q_year,
-            QuestionDb.question_stem['en'].astext.ilike(stem_text)
+            and_(
+                sa_col(QuestionDb.exam) == q_exam,
+                sa_col(QuestionDb.year) == q_year,
+                QuestionDb.question_stem['en'].astext.ilike(stem_text[:200])
+            )
         )
         existing = (await db.execute(stmt)).first()
         if existing:
-            duplicate_errors.append(f"- Question {q.question_number} is already uploaded.")
+            duplicates.append({
+                "id": str(q.id),
+                "question_number": q.question_number,
+                "raw_question_stem": q.raw_question_stem,
+            })
+            # Mark in staging so they show in the duplicates panel
+            await ingestion_repo.update_staged_question(
+                db, q.id,
+                review_status=ReviewStatus.needs_edit,
+                reviewer_notes="⚠️ Duplicate: This question is already in the database.",
+            )
+        else:
+            clean.append(q)
 
-    if duplicate_errors:
-        raise HTTPException(
-            status_code=400,
-            detail="Cannot publish because the following questions are duplicates:\n" + "\n".join(duplicate_errors)
-        )
-            
+    # ── Publish clean questions ──
+    published_count = 0
     try:
-        published_count = 0
-        for q in approved_questions:
-            # 1. Create Question
+        for q in clean:
             new_q = QuestionDb(
                 subtopic_id=q.subtopic_id,
                 exam=q.exam if q.exam else batch.exam,
                 year=q.year if q.year else batch.year,
                 paper=batch.paper,
                 question_number=q.question_number,
-                question_stem=q.paraphrased_stem.get('en') if q.paraphrased_stem else {"en": q.raw_question_stem},
-                options=q.paraphrased_options.get('en') if q.paraphrased_options else q.raw_options,
+                question_stem={"en": q.raw_question_stem},
+                options=q.raw_options or {},
                 correct_option=q.correct_option,
-                explanation=q.ai_explanation.get('en') if q.ai_explanation else None,
+                explanation=None,
                 question_type="MCQ",
                 elo_rating=1500
             )
             db.add(new_q)
-            await db.flush()  # To get the new_q.id
-            
-            # 2. Create Audit Log
+            await db.flush()
+
             log = AuditLogDb(
                 admin_id=admin_user.id,
                 table_name="questions",
@@ -366,21 +426,49 @@ async def publish_batch(
                 new_payload={"staged_question_id": str(q.id)}
             )
             db.add(log)
-            
-            # 3. Remove from staging so it doesn't show up again
+
+            # Remove from staging
             await db.delete(q)
             published_count += 1
-                
-        # Mark batch as completed only if there are no pending questions left
-        remaining_questions = [q for q in questions if q.review_status not in (ReviewStatus.approved, ReviewStatus.rejected)]
-        if len(remaining_questions) == 0:
-            batch.status = IngestionStatus.completed
-            
-        await db.commit()
-        
-        return {"message": f"Successfully published {published_count} questions.", "published_count": published_count}
-    except Exception as e:
-        import traceback
-        await db.rollback()
-        raise HTTPException(status_code=400, detail=f"Database Crash during publish: {str(e)}\n\nTrace: {traceback.format_exc()}")
 
+        await db.commit()
+
+        if published_count > 0:
+            from app.services.search_service import clear_search_cache
+            clear_search_cache()
+
+    except Exception as e:
+        import traceback as tb
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Database error during publish: {str(e)}\n{tb.format_exc()}"
+        )
+
+    return {
+        "published_count": published_count,
+        "duplicates": duplicates,
+        "invalid": invalid,
+        "message": f"Published {published_count} questions."
+        + (f" {len(duplicates)} duplicates need review." if duplicates else "")
+        + (f" {len(invalid)} questions missing taxonomy/answer." if invalid else ""),
+    }
+
+
+@router.post("/staged/bulk-reject")
+async def bulk_reject_staged(
+    body: BulkApproveRequest,
+    db: AsyncSession = Depends(get_db),
+    admin_user: UserDb = Depends(get_current_admin_user),
+):
+    """Reject (remove from publish queue) all given staged question IDs."""
+    from sqlalchemy import update as sa_update
+    from app.models.ingestion import StagedQuestionDb as _SQ
+    stmt = (
+        sa_update(_SQ)
+        .where(sa_col(_SQ.id).in_(body.ids))
+        .values(review_status=ReviewStatus.rejected)
+    )
+    await db.execute(stmt)
+    await db.commit()
+    return {"rejected_count": len(body.ids)}

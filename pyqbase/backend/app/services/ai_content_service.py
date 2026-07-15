@@ -30,14 +30,17 @@ groq_client = AsyncGroq(api_key=settings.GROQ_API_KEY, timeout=90.0) if _is_vali
 # We send all questions in ONE batch call to save time.
 MODEL_NAME = "llama-3.1-8b-instant"
 
-# Max questions per batch call to stay within token limits (~6000 tokens output safe limit)
-BATCH_CHUNK_SIZE = 30
+# Max questions per batch call.
+# Free Groq tier limit: 6000 TPM. Each question costs ~100-150 input tokens.
+# System prompt + taxonomy context costs ~600 tokens.
+# At 10 questions × 150 tokens = 1500 + 600 overhead = ~2100 tokens → safely under limit.
+BATCH_CHUNK_SIZE = 10
 
 
 @retry(
     wait=wait_exponential(multiplier=30, min=30, max=120),
     stop=stop_after_attempt(3),
-    retry=retry_if_exception_type(groq.RateLimitError),
+    retry=retry_if_exception_type((groq.RateLimitError, groq.APIStatusError)),
     reraise=True,
 )
 async def call_groq_with_retry(
@@ -96,28 +99,27 @@ async def enrich_batch_chunk(
     """
     Send a chunk of questions to Groq in a single call.
     Returns a dict mapping question_number -> {subject, topic, subtopic}.
+    Only sends the question STEM (not options) to keep tokens minimal.
     """
-    # Build the user message listing all questions
     lines = [f"Exam: {batch.exam}"]
     for q in questions:
-        header = f" [{q.header_context}]" if q.header_context else ""
-        options_text = ", ".join([f"{k}: {v}" for k, v in (q.raw_options or {}).items()])
-        lines.append(
-            f"Q{q.question_number}{header}: {q.raw_question_stem or '(no stem)'} | Options: {options_text}"
-        )
+        # Only include the stem — options are not needed for classification
+        # Truncate long stems to 200 chars to stay within token budget
+        stem = (q.raw_question_stem or "(no stem)")[:200]
+        lines.append(f"Q{q.question_number}: {stem}")
     user_msg = "\n".join(lines)
 
     sys_prompt = _BATCH_SYSTEM_PROMPT.replace("{taxonomy_context}", taxonomy_context)
 
-    # Estimate tokens: ~50 tokens per question + system prompt overhead
-    max_tokens = min(4000, len(questions) * 60 + 500)
+    # ~30 tokens output per question
+    max_output_tokens = len(questions) * 35 + 100
 
     content = await call_groq_with_retry(
         [
             {"role": "system", "content": sys_prompt},
             {"role": "user", "content": user_msg},
         ],
-        max_tokens=max_tokens,
+        max_tokens=max_output_tokens,
     )
 
     result = json.loads(content)

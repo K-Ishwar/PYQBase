@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSubmitAttempt, AttemptResponse } from '@/lib/hooks/useSubmitAttempt'
 import type { QuestionListItem } from '@/lib/hooks/useSearch'
+import { QuestionTags } from './QuestionTags'
 
 interface QuizEngineProps {
   question: Partial<QuestionListItem> & {
@@ -150,26 +151,16 @@ export function QuizEngine({
       <div className="p-6 space-y-6">
         {/* ── Question metadata row ─────────────────────────────────────── */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-            {question.exam.replace('_', ' ')}
-          </span>
-          <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
-            {question.year} · {question.paper}
-          </span>
-          {question.subject_name && (
-            <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-              {question.subject_name}
-            </span>
-          )}
-          {question.topic_name && (
-            <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-              {question.topic_name}
-            </span>
-          )}
-          <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground ml-auto">
-            Q.{question.question_number}
-          </span>
-          <span className="text-xs font-mono text-muted-foreground">
+          <QuestionTags 
+            exam={question.exam} 
+            year={question.year} 
+            paper={question.paper} 
+            subject_name={question.subject_name} 
+            topic_name={question.topic_name} 
+            question_number={question.question_number} 
+            className="flex-1"
+          />
+          <span className="text-xs font-mono text-muted-foreground ml-auto">
             {elapsed}s
           </span>
         </div>
