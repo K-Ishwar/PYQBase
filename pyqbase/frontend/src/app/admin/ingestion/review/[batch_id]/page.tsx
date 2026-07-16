@@ -108,7 +108,7 @@ export default function ReviewBatchPage() {
     }
   }, [batch_id])
 
-  // Load all taxonomy upfront — subjects → all topics per subject → all subtopics per topic
+  // Load all taxonomy upfront — subjects → all topics per subject
   const fetchAllTaxonomy = useCallback(async () => {
     try {
       const res = await apiClient("/api/v1/taxonomy/all")
@@ -179,7 +179,7 @@ export default function ReviewBatchPage() {
     }
   }, [])
 
-  // ── Subject change — clear topic & subtopic ────────────────────────────────
+  // ── Subject change — clear topic ────────────────────────────────
   const handleSubjectChange = useCallback((q: Question, newSubjectId: string) => {
     patchQuestion(q.id, {
       subject_id: newSubjectId || null,

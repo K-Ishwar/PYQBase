@@ -51,6 +51,7 @@ export default async function AdminLayout({
           <AdminNavLink href="/admin/questions" label="Questions" icon={<HelpCircle className="w-5 h-5" />} />
           <AdminNavLink href="/admin/taxonomy" label="Taxonomy" icon={<Layers className="w-5 h-5" />} />
           <AdminNavLink href="/admin/ingestion" label="Bulk Ingestion" icon={<UploadCloud className="w-5 h-5" />} />
+          <AdminNavLink href="/admin/reports" label="Data Reports" icon={<LayoutDashboard className="w-5 h-5" />} />
         </nav>
       </aside>
 

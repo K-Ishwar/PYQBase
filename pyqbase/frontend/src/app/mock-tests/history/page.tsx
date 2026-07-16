@@ -7,11 +7,8 @@ import { ClipboardList, ArrowLeft, ChevronRight, Lock, Loader2 } from 'lucide-re
 import Link from 'next/link'
 
 export default function MockTestHistoryPage() {
-  const { user } = useAuth()
-  const { data: history = [], isLoading } = useMockTestHistory(!!user)
-
-  // Free users: backend already limits to 3. We just show the gate notice.
-  const isFree = true // will be wired to actual subscription check
+  const { user, isSubscribed } = useAuth()
+  const { data: history = [], isLoading } = useMockTestHistory(!!user && isSubscribed)
 
   return (
     <div className="container max-w-2xl mx-auto py-10 px-4 space-y-6">
@@ -21,16 +18,27 @@ export default function MockTestHistoryPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight">Mock Test History</h1>
-          {isFree && (
-            <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-              <Lock className="h-3 w-3" /> Free plan shows your last 3 tests ·{' '}
-              <Link href="/pricing" className="text-primary font-semibold hover:underline">Upgrade for full history</Link>
-            </p>
-          )}
         </div>
       </div>
 
-      {isLoading ? (
+      {!isSubscribed ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="bg-card border shadow-xl rounded-2xl p-8 max-w-md w-full flex flex-col items-center">
+            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <Lock className="h-6 w-6 text-primary" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">Premium Feature</h2>
+            <p className="text-muted-foreground text-sm mb-6">
+              Track your mock test history and performance over time with a Premium subscription.
+            </p>
+            <Link href="/pricing" className="w-full">
+              <button className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold shadow-lg shadow-primary/20 hover:shadow-xl transition-all">
+                Upgrade to Premium
+              </button>
+            </Link>
+          </div>
+        </div>
+      ) : isLoading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-7 w-7 animate-spin text-primary" />
         </div>
@@ -87,15 +95,6 @@ export default function MockTestHistoryPage() {
             )
           })}
 
-          {/* Upgrade gate visible row for free users */}
-          {isFree && (
-            <Link
-              href="/pricing"
-              className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4 text-sm font-medium text-amber-700 dark:text-amber-400 hover:border-amber-500 transition-colors"
-            >
-              <Lock className="h-4 w-4" /> Upgrade to see your full history
-            </Link>
-          )}
         </div>
       )}
     </div>

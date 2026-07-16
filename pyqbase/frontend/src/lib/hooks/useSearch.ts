@@ -8,6 +8,9 @@ export interface QuestionListItem {
   paper: string
   question_number: number
   question_stem: { en: string }
+  options: Record<string, string>
+  correct_option: string
+  explanation?: any
   question_type: string
   has_image: boolean
   image_url?: string | null

@@ -2,6 +2,11 @@ import * as React from 'react'
 import { PillBadge } from './PillBadge'
 import { QuestionTags } from './QuestionTags'
 import type { QuestionListItem } from '@/lib/hooks/useSearch'
+import { useGenerateExplanation } from '@/lib/hooks/useQuestions'
+
+import { Lock, Sparkles, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { useAuth } from '../providers/auth-provider'
 
 interface SearchResultCardProps {
   item: QuestionListItem
@@ -46,9 +51,14 @@ const EXAM_LABELS: Record<string, string> = {
 }
 
 export function SearchResultCard({ item, query, isPremiumLocked }: SearchResultCardProps) {
-  const stemPreview = item.question_stem?.en
-    ? item.question_stem.en.slice(0, 220) + (item.question_stem.en.length > 220 ? '…' : '')
-    : ''
+  const [showExplanation, setShowExplanation] = useState(false)
+  const [localExplanation, setLocalExplanation] = useState<any>(null)
+  const { isSubscribed } = useAuth()
+  const stemPreview = item.question_stem?.en || ''
+  
+  const { mutate: generateExplanation, isPending: isGeneratingExplanation } = useGenerateExplanation(item.id)
+  
+  const displayExplanation = localExplanation || item.explanation
 
   return (
     <div className="group relative rounded-xl border bg-card p-5 transition-all hover:border-primary/30 hover:shadow-md">
@@ -90,18 +100,89 @@ export function SearchResultCard({ item, query, isPremiumLocked }: SearchResultC
         </div>
       )}
 
+      {/* Options and Explanation */}
+      {!isPremiumLocked && item.options && (
+        <div className="mt-4 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {['A', 'B', 'C', 'D'].map((key) => {
+              const optionText = item.options[key]
+              if (!optionText) return null
+              
+              const isCorrect = key === item.correct_option
+              
+              return (
+                <div
+                  key={key}
+                  className={`p-3 rounded-lg border text-sm transition-colors ${
+                    showExplanation && isCorrect 
+                      ? 'bg-green-500/10 border-green-500 text-green-900 dark:text-green-300 font-medium' 
+                      : 'bg-card hover:bg-muted'
+                  }`}
+                >
+                  <span className="font-bold mr-2">{key}.</span>
+                  {highlightText(optionText, query)}
+                </div>
+              )
+            })}
+          </div>
+          
+          {showExplanation && (
+            displayExplanation ? (
+              <div className="mt-4 p-4 rounded-xl bg-primary/5 border border-primary/20 text-sm">
+                <h4 className="font-bold mb-2 text-primary">Explanation:</h4>
+                <p className="leading-relaxed">
+                  {typeof displayExplanation === 'string' 
+                    ? displayExplanation 
+                    : (displayExplanation.en || JSON.stringify(displayExplanation))}
+                </p>
+              </div>
+            ) : !isSubscribed ? (
+              <div className="mt-4 p-4 rounded-xl bg-primary/5 border border-primary/20 text-sm text-center">
+                <Lock className="h-5 w-5 mx-auto mb-2 text-primary" />
+                <p className="font-semibold text-primary mb-1">Premium Explanation</p>
+                <p className="text-xs text-muted-foreground mb-3">Upgrade to a Premium Subscription to unlock detailed AI-generated explanations.</p>
+                <a href="/pricing" className="bg-primary text-primary-foreground px-4 py-1.5 rounded-md text-xs font-semibold hover:bg-primary/90 transition-colors">Upgrade to Premium</a>
+              </div>
+            ) : (
+              <div className="mt-4 p-4 rounded-xl bg-secondary/20 border border-secondary/30 text-sm text-center">
+                <Sparkles className="h-5 w-5 mx-auto mb-2 text-secondary-foreground" />
+                <p className="font-semibold text-secondary-foreground mb-1">No Explanation Available</p>
+                <p className="text-xs text-muted-foreground mb-3">Be the first to generate an AI explanation for this question!</p>
+                <button 
+                  onClick={() => generateExplanation(undefined, {
+                    onSuccess: (data) => {
+                      if (data.explanation) {
+                        setLocalExplanation(data.explanation)
+                      }
+                    }
+                  })}
+                  disabled={isGeneratingExplanation}
+                  className="bg-secondary text-secondary-foreground px-4 py-1.5 rounded-md text-xs font-semibold hover:bg-secondary/80 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 mx-auto"
+                >
+                  {isGeneratingExplanation ? (
+                    <><Loader2 className="h-3 w-3 animate-spin" /> Generating...</>
+                  ) : 'Generate with AI'}
+                </button>
+              </div>
+            )
+          )}
+        </div>
+      )}
+
       {/* Footer */}
       {!isPremiumLocked && (
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-6 pt-4 border-t flex items-center justify-between">
           <span className="text-xs text-muted-foreground">
             {item.ts_rank != null ? `Relevance: ${(item.ts_rank * 100).toFixed(0)}%` : ''}
           </span>
-          <a
-            href={`/questions/${item.id}`}
-            className="rounded-full border px-3 py-1 text-xs font-medium text-primary hover:bg-primary/5 transition-colors"
-          >
-            View Question →
-          </a>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowExplanation(!showExplanation)}
+              className="rounded-full border px-4 py-1.5 text-xs font-bold text-foreground hover:bg-muted transition-colors"
+            >
+              {showExplanation ? 'Hide Explanation' : 'Show Explanation'}
+            </button>
+          </div>
         </div>
       )}
     </div>

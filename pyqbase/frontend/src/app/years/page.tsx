@@ -58,7 +58,7 @@ export default async function YearsPage() {
               <div className="flex flex-wrap gap-3">
                 {exam.years.map(year => (
                   <Link 
-                    href={`/search?exam=${exam.id}&year=${year}`} 
+                    href={`/years/${year}?exam=${exam.id}`} 
                     key={year}
                     className="flex items-center gap-2 px-5 py-3 rounded-xl border bg-background hover:border-primary hover:text-primary transition-all shadow-sm hover:shadow-md"
                   >

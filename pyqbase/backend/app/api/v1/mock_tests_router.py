@@ -35,36 +35,11 @@ async def generate_mock_test(
 ):
     is_premium = current_user.subscription_status in ("active", "past_due")
 
-    # Freemium Limits
     if not is_premium:
-        if body.question_count > 25:
-            raise QuotaExceededException(
-                message="Free users are limited to 25 questions per mock test. Upgrade for up to 100.",
-                details=[{"limit": 25, "requested": body.question_count}]
-            )
-        
-        if body.mode == "weak_area":
-            raise PremiumRequiredException(
-                message="Weak-area mock tests are a premium feature. Upgrade to access personalised wrong-answer targeting.",
-                details=[{"required_plan": "active", "upgrade_url": "/pricing"}]
-            )
-        
-        if body.mode == "custom":
-            start_of_week = get_start_of_iso_week_ist()
-            stmt = select(func.count(MockTestDb.id)).where(
-                and_(
-                    MockTestDb.user_id == current_user.id,
-                    MockTestDb.mode == "custom",
-                    MockTestDb.created_at >= start_of_week
-                )
-            )
-            res = await db.execute(stmt)
-            count = res.scalar() or 0
-            if count >= 1:
-                raise QuotaExceededException(
-                    message="Free users are limited to 1 custom mock test per ISO week (resets Monday 00:00 IST). Upgrade for unlimited.",
-                    details=[{"week_count": count, "limit": 1, "resets": "Monday 00:00 IST", "upgrade_url": "/pricing"}]
-                )
+        raise PremiumRequiredException(
+            message="The Mock Test Generator is a premium feature. Upgrade to create custom timed practice tests.",
+            details=[{"required_plan": "active", "upgrade_url": "/pricing"}]
+        )
 
     # Generate questions
     factory = MockTestFactory(db, current_user.id)
@@ -98,9 +73,13 @@ async def get_mock_test_history(
 ):
     is_premium = current_user.subscription_status in ("active", "past_due")
     
-    stmt = select(MockTestDb).where(MockTestDb.user_id == current_user.id).order_by(MockTestDb.created_at.desc())
     if not is_premium:
-        stmt = stmt.limit(3)
+        raise PremiumRequiredException(
+            message="Mock Test history is a premium feature.",
+            details=[{"required_plan": "active", "upgrade_url": "/pricing"}]
+        )
+        
+    stmt = select(MockTestDb).where(MockTestDb.user_id == current_user.id).order_by(MockTestDb.created_at.desc())
         
     result = await db.execute(stmt)
     return list(result.scalars().all())
@@ -111,6 +90,13 @@ async def get_mock_test(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    is_premium = current_user.subscription_status in ("active", "past_due")
+    if not is_premium:
+        raise PremiumRequiredException(
+            message="Viewing Mock Tests is a premium feature.",
+            details=[{"required_plan": "active", "upgrade_url": "/pricing"}]
+        )
+
     mock_test = await db.get(MockTestDb, id)
     if not mock_test or mock_test.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Mock test not found")

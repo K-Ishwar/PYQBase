@@ -4,6 +4,8 @@ import { useState } from 'react'
 import {
   useSubjects,
   useTopics,
+  useCreateSubject,
+  useDeleteSubject,
   useCreateTopic,
   useDeleteTopic,
 } from '@/lib/hooks/useTaxonomy'
@@ -14,6 +16,12 @@ export default function TaxonomyPage() {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null)
   const { data: topics = [], isLoading: isLoadingTopics } = useTopics(selectedSubjectId ?? undefined)
 
+  const [newSubject, setNewSubject] = useState('')
+  const [newTopic, setNewTopic] = useState('')
+
+  const createSubject = useCreateSubject()
+  const deleteSubject = useDeleteSubject()
+  const createTopic = useCreateTopic()
   const deleteTopic = useDeleteTopic()
 
   function handleAddSubject() {
@@ -24,7 +32,7 @@ export default function TaxonomyPage() {
   }
 
   function handleDeleteSubject(id: string) {
-    if (confirm('Are you sure you want to delete this subject and all its topics/subtopics?')) {
+    if (confirm('Are you sure you want to delete this subject and all its topics?')) {
       deleteSubject.mutate(id, {
         onSuccess: () => {
           if (selectedSubjectId === id) {
@@ -42,6 +50,12 @@ export default function TaxonomyPage() {
     })
   }
 
+  function handleDeleteTopic(id: string) {
+    if (confirm('Are you sure you want to delete this topic?')) {
+      deleteTopic.mutate(id)
+    }
+  }
+
 
 
   const inputClass = 'flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary'
@@ -52,7 +66,7 @@ export default function TaxonomyPage() {
     <div className="space-y-8 max-w-5xl">
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight">Taxonomy Management</h1>
-        <p className="mt-1 text-muted-foreground">Manage subjects, topics, and subtopics directly in the database.</p>
+        <p className="mt-1 text-muted-foreground">Manage subjects and topics directly in the database.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

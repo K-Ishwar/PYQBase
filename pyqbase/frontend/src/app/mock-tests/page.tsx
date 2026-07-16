@@ -13,7 +13,7 @@ import { apiClient } from '@/lib/api-client'
 
 export default function MockTestsPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, isSubscribed } = useAuth()
   const { data: subjects = [] } = useSubjects()
   const generateMutation = useGenerateMockTest()
 
@@ -40,8 +40,12 @@ export default function MockTestsPage() {
       .catch(err => console.error("Failed to fetch exams:", err))
   }, [user])
 
-  // Treat as free unless user has premium or admin role in app_metadata
-  const isFree = user?.app_metadata?.role !== 'admin' && user?.app_metadata?.subscription_status !== 'premium'
+  // Ensure an exam is selected if none is initially
+  useEffect(() => {
+    if (exams.length > 0 && !exam) {
+      setExam(exams[0])
+    }
+  }, [exams, exam])
 
   const handleGenerate = async () => {
     if (!subjectId) { setError('Please select a subject.'); return }
@@ -68,7 +72,28 @@ export default function MockTestsPage() {
         </Link>
       </div>
 
-      <div className="rounded-2xl border bg-card p-6 space-y-6 shadow-sm">
+      <div className="relative rounded-2xl border bg-card p-6 space-y-6 shadow-sm overflow-hidden">
+        
+        {/* Premium Lock Overlay */}
+        {!isSubscribed && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm p-6 text-center">
+            <div className="bg-card border shadow-xl rounded-2xl p-8 max-w-md w-full flex flex-col items-center">
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <Lock className="h-6 w-6 text-primary" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Premium Feature</h2>
+              <p className="text-muted-foreground text-sm mb-6">
+                The Mock Test Generator allows you to create custom, timed practice tests and target your weak areas. Upgrade to Premium to unlock this feature.
+              </p>
+              <Link href="/pricing" className="w-full">
+                <MagneticButton className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold shadow-lg shadow-primary/20 hover:shadow-xl transition-all">
+                  Upgrade to Premium
+                </MagneticButton>
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Exam selector */}
         <div className="space-y-2">
           <label className="text-sm font-semibold">Exam</label>
@@ -103,25 +128,23 @@ export default function MockTestsPage() {
           </select>
         </div>
 
-        {/* Question count slider */}
+        {/* Question count selector */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-semibold">Questions</label>
-            <span className="text-2xl font-extrabold text-primary">{questionCount}</span>
-          </div>
-          <input
-            type="range"
-            min={5}
-            max={isFree ? 25 : 100}
-            step={5}
-            value={questionCount}
-            onChange={e => setQuestionCount(Number(e.target.value))}
-            className="w-full accent-primary"
-          />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>5</span>
-            {isFree && <span className="text-amber-600 font-medium">Free limit: 25 · Upgrade for 100</span>}
-            <span>{isFree ? 25 : 100}</span>
+          <label className="text-sm font-semibold">Number of Questions</label>
+          <div className="grid grid-cols-4 gap-3">
+            {[10, 20, 50, 100].map(count => (
+              <button
+                key={count}
+                onClick={() => setQuestionCount(count)}
+                className={`rounded-xl py-3 text-sm font-bold border-2 transition-all ${
+                  questionCount === count 
+                    ? 'border-primary bg-primary text-primary-foreground shadow-md shadow-primary/20' 
+                    : 'border-border bg-card hover:border-primary/40 text-foreground'
+                }`}
+              >
+                {count}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -141,43 +164,21 @@ export default function MockTestsPage() {
               <span className="text-xs text-muted-foreground">Random questions from your selected filters.</span>
             </button>
 
-            {/* Weak area mode — lock for free users */}
+            {/* Weak area mode */}
             <button
-              onClick={() => !isFree && setMode('weak_area')}
-              className={`relative flex flex-col items-start gap-1.5 rounded-xl border-2 p-4 text-left transition-all ${
-                isFree
-                  ? 'border-border opacity-70 cursor-not-allowed'
-                  : mode === 'weak_area'
+              onClick={() => setMode('weak_area')}
+              className={`flex flex-col items-start gap-1.5 rounded-xl border-2 p-4 text-left transition-all ${
+                mode === 'weak_area'
                   ? 'border-primary bg-primary/5'
                   : 'border-border hover:border-primary/40'
               }`}
             >
-              {isFree && (
-                <div className="group absolute inset-0 flex items-center justify-center rounded-xl">
-                  <div className="absolute inset-0 rounded-xl bg-background/60 backdrop-blur-[2px]" />
-                  <div className="relative z-10 flex flex-col items-center gap-1">
-                    <Lock className="h-5 w-5 text-amber-500" />
-                    <Link href="/pricing" onClick={e => e.stopPropagation()}
-                      className="text-xs font-semibold text-amber-600 hover:underline">
-                      Upgrade to unlock
-                    </Link>
-                  </div>
-                </div>
-              )}
               <Target className={`h-5 w-5 ${mode === 'weak_area' ? 'text-primary' : 'text-muted-foreground'}`} />
               <span className="text-sm font-semibold">Weak Areas</span>
               <span className="text-xs text-muted-foreground">Targets questions you&apos;ve answered incorrectly.</span>
             </button>
           </div>
         </div>
-
-        {/* Free tier notice for custom weekly limit */}
-        {isFree && mode === 'custom' && (
-          <div className="flex items-start gap-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
-            <Zap className="h-4 w-4 mt-0.5 flex-shrink-0" />
-            <span>Free plan: 1 custom mock test per ISO week (resets Monday 00:00 IST). <Link href="/pricing" className="font-semibold hover:underline">Upgrade for unlimited.</Link></span>
-          </div>
-        )}
 
         {error && (
           <div className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">

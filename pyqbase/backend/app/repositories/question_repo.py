@@ -7,7 +7,7 @@ from app.models.question import QuestionDb, QuestionUpsertPayload
 
 
 async def get_question_by_id(db: AsyncSession, question_id: UUID) -> Optional[QuestionDb]:
-    result = await db.execute(select(QuestionDb).where(QuestionDb.id == question_id))
+    result = await db.execute(select(QuestionDb).where(QuestionDb.id == question_id)) # type: ignore
     return result.scalar_one_or_none()
 
 
@@ -46,7 +46,6 @@ async def upsert_question(
             image_url=payload.image_url,
             image_description=payload.image_description,
             parse_confidence=payload.parse_confidence,
-            subtopic_id=payload.subtopic_id,
         )
         db.add(question)
     else:
@@ -63,7 +62,6 @@ async def upsert_question(
         existing.image_url = payload.image_url
         existing.image_description = payload.image_description
         existing.parse_confidence = payload.parse_confidence
-        existing.subtopic_id = payload.subtopic_id
         question = existing
 
     # ── DROPPED Question Cleanup ─────────────────────────────────────────────
@@ -81,7 +79,7 @@ async def upsert_question(
 
 
 async def list_questions(db: AsyncSession, limit: int = 100, offset: int = 0) -> list[QuestionDb]:
-    stmt = select(QuestionDb).order_by(QuestionDb.created_at.desc()).limit(limit).offset(offset)
+    stmt = select(QuestionDb).order_by(QuestionDb.created_at.desc()).limit(limit).offset(offset) # type: ignore
     result = await db.execute(stmt)
     return list(result.scalars().all())
 
@@ -92,7 +90,7 @@ async def delete_questions(db: AsyncSession, question_ids: list[UUID]) -> int:
     Returns the number of deleted rows.
     """
     from sqlalchemy import delete
-    stmt = delete(QuestionDb).where(QuestionDb.id.in_(question_ids))
+    stmt = delete(QuestionDb).where(QuestionDb.id.in_(question_ids)) # type: ignore
     result = await db.execute(stmt)
     await db.commit()
-    return result.rowcount
+    return result.rowcount # type: ignore

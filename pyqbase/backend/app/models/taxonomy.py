@@ -31,6 +31,7 @@ class SubjectCreate(BaseModel):
 class SubjectResponse(BaseModel):
     id: UUID
     name: str
+    question_count: Optional[int] = 0
     model_config = {"from_attributes": True}
 
 

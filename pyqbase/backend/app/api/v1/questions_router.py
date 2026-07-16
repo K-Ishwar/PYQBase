@@ -5,7 +5,7 @@ from typing import Optional
 from app.core.database import get_db
 from app.models.question import SearchResponse
 from app.services.search_service import search_questions
-from app.core.security import get_current_user
+from app.core.security import get_current_user, get_optional_current_user, User
 
 router = APIRouter()
 
@@ -21,6 +21,7 @@ async def list_questions(
     limit: int = Query(20, ge=1, le=100, description="Results per page (hard-capped at 100)"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
     db: AsyncSession = Depends(get_db),
+    user: Optional[User] = Depends(get_optional_current_user),
 ):
     """
     Cross-exam PYQ search via Postgres Full-Text Search.
@@ -38,6 +39,7 @@ async def list_questions(
         sort=sort,
         limit=limit,
         offset=offset,
+        include_explanation=getattr(user, 'subscription_status', 'free') == 'active' or getattr(user, 'role', '') == 'admin' if user else False,
     )
 
 
@@ -131,6 +133,63 @@ async def get_question_solution(
     if not question:
         raise HTTPException(status_code=404, detail="Question not found")
         
+    # Check subscription status
+    has_sub = getattr(user, 'subscription_status', 'free') == 'active' or getattr(user, 'role', '') == 'admin'
+    
+    return QuestionSolutionResponse(
+        id=str(question.id),
+        correct_option=question.correct_option,
+        explanation=question.explanation if has_sub else None,
+    )
+
+
+class GenerateExplanationRequest(BaseModel):
+    pass
+
+@router.post("/{question_id}/explanation/generate", response_model=QuestionSolutionResponse)
+async def generate_question_explanation_api(
+    question_id: str,
+    req: GenerateExplanationRequest,
+    db: AsyncSession = Depends(get_db),
+    user: Any = Depends(get_current_user)  # Requires auth
+):
+    """
+    Generate an AI explanation for the question and save it.
+    """
+    from app.models.question import QuestionDb
+    from sqlalchemy import select
+    from fastapi import HTTPException
+    from app.services.ai_content_service import generate_explanation
+    from app.services.search_service import clear_search_cache
+    
+    # Check subscription status
+    has_sub = getattr(user, 'subscription_status', 'free') == 'active' or getattr(user, 'role', '') == 'admin'
+    if not has_sub:
+        raise HTTPException(status_code=403, detail="Subscription required to generate explanations")
+        
+    result = await db.execute(select(QuestionDb).where(QuestionDb.id == question_id))
+    question = result.scalar_one_or_none()
+    
+    if not question:
+        raise HTTPException(status_code=404, detail="Question not found")
+        
+    result_data = await generate_explanation(
+        question_stem=question.question_stem,
+        options=question.options,
+        provided_correct_option=question.correct_option,
+    )
+    
+    # Update question with new explanation and possibly corrected option
+    explanation_obj = {"en": result_data["explanation"]}
+    question.explanation = explanation_obj
+    question.correct_option = result_data["correct_option"]
+    
+    db.add(question)
+    await db.commit()
+    
+    # Clear the search cache so that the new explanation appears in search results immediately
+    clear_search_cache()
+    
     return QuestionSolutionResponse(
         id=str(question.id),
         correct_option=question.correct_option,

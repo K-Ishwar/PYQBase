@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, Lock, CheckCircle2, BookOpen } from 'lucide-react'
 import { useAuth } from '@/components/providers/auth-provider'
-import { useQuestionDetail, useQuestionSolution } from '@/lib/hooks/useQuestions'
+import { useQuestionDetail, useQuestionSolution, useGenerateExplanation } from '@/lib/hooks/useQuestions'
 import { useSearch } from '@/lib/hooks/useSearch'
 import { createClient } from '@/lib/supabase/client'
 import { QuestionTags } from '@/components/ui/QuestionTags'
@@ -13,7 +13,7 @@ import { QuestionTags } from '@/components/ui/QuestionTags'
 export function QuestionClient({ id }: { id: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user, isLoading: isAuthLoading } = useAuth()
+  const { user, isLoading: isAuthLoading, isSubscribed } = useAuth()
   const supabase = createClient()
 
   // Extract search params to fetch the same context list for Prev/Next
@@ -29,6 +29,9 @@ export function QuestionClient({ id }: { id: string }) {
   
   // Fetch solution if authenticated
   const { data: solution, isLoading: isSolutionLoading } = useQuestionSolution(id, !!user)
+  
+  // Explanation generator
+  const { mutate: generateExplanation, isPending: isGeneratingExplanation } = useGenerateExplanation(id)
 
   // Fetch context list for Prev/Next navigation
   const { data: searchResults } = useSearch({
@@ -172,7 +175,25 @@ export function QuestionClient({ id }: { id: string }) {
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-primary" /> Explanation
             </h3>
-            {isSolutionLoading ? (
+            
+            {!isSubscribed ? (
+              <div className="p-8 mt-2 flex flex-col items-center justify-center text-center bg-primary/5 border border-primary/20 rounded-xl relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none"></div>
+                <div className="p-3 bg-background rounded-full border shadow-sm mb-4 relative z-10">
+                  <Lock className="h-6 w-6 text-primary" />
+                </div>
+                <h4 className="text-lg font-bold mb-2 relative z-10">Premium Explanation</h4>
+                <p className="text-muted-foreground text-sm mb-6 max-w-md relative z-10">
+                  Upgrade to a Premium Subscription to unlock detailed AI-generated explanations and step-by-step breakdowns for all questions.
+                </p>
+                <a 
+                  href="/pricing"
+                  className="bg-primary text-primary-foreground px-6 py-2.5 rounded-md font-semibold hover:bg-primary/90 transition-colors shadow-sm relative z-10"
+                >
+                  Upgrade to Premium
+                </a>
+              </div>
+            ) : isSolutionLoading ? (
               <div className="space-y-2 animate-pulse">
                 <div className="h-4 bg-muted rounded w-full"></div>
                 <div className="h-4 bg-muted rounded w-5/6"></div>
@@ -183,11 +204,22 @@ export function QuestionClient({ id }: { id: string }) {
                 {/* Assuming explanation is stored as text or JSON containing a text field */}
                 {typeof solution.explanation === 'string' 
                   ? <p>{solution.explanation}</p> 
-                  : <pre className="bg-muted p-4 rounded-md overflow-x-auto whitespace-pre-wrap">{JSON.stringify(solution.explanation, null, 2)}</pre>
+                  : (solution.explanation.en ? <p>{solution.explanation.en}</p> : <pre className="bg-muted p-4 rounded-md overflow-x-auto whitespace-pre-wrap">{JSON.stringify(solution.explanation, null, 2)}</pre>)
                 }
               </div>
             ) : (
-              <p className="text-muted-foreground italic">No detailed explanation available for this question.</p>
+              <div className="flex flex-col gap-4">
+                <p className="text-muted-foreground italic">No detailed explanation available for this question.</p>
+                <div className="mt-2">
+                  <button 
+                    onClick={() => generateExplanation()}
+                    disabled={isGeneratingExplanation}
+                    className="flex items-center justify-center gap-2 px-6 py-2.5 bg-primary/10 text-primary border border-primary/20 rounded-md font-semibold hover:bg-primary/20 transition-colors shadow-sm disabled:opacity-50"
+                  >
+                    {isGeneratingExplanation ? 'Generating...' : 'Generate AI Explanation'}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         )}

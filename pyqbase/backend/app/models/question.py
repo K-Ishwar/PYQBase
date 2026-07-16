@@ -101,7 +101,7 @@ class QuestionResponse(BaseModel):
 class QuestionListItem(BaseModel):
     """
     Scraping-safe public list/search response.
-    Deliberately omits `correct_option` and `options` per Security doc §8.
+    Updated: Now includes options, correct_option, and explanation per user request.
     """
     id: UUID
     exam: str
@@ -109,6 +109,9 @@ class QuestionListItem(BaseModel):
     paper: str
     question_number: int
     question_stem: dict          # only .en text, no answer
+    options: dict
+    correct_option: str
+    explanation: Optional[dict] = None
     question_type: str
     has_image: bool
     image_url: Optional[str]

@@ -27,13 +27,11 @@ async def get_srs_queue(
             q.exam,
             s.name AS subject_name,
             t.name AS topic_name,
-            st.name AS subtopic_name,
             q.elo_rating,
             us.next_review_date
         FROM user_srs us
         JOIN questions q ON us.question_id = q.id
-        JOIN subtopics st ON q.subtopic_id = st.id
-        JOIN topics t ON st.topic_id = t.id
+        JOIN topics t ON q.topic_id = t.id
         JOIN subjects s ON t.subject_id = s.id
         WHERE us.user_id = :user_id
           AND us.next_review_date <= (CURRENT_TIMESTAMP AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Kolkata')::DATE
@@ -57,7 +55,6 @@ async def get_srs_queue(
             "exam": row["exam"],
             "subject_name": row["subject_name"],
             "topic_name": row["topic_name"],
-            "subtopic_name": row["subtopic_name"],
             "difficulty_label": get_difficulty(row["elo_rating"]),
             "elo_rating": row["elo_rating"],
             "next_review_date": row["next_review_date"].isoformat(),

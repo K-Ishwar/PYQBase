@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api-client'
 
 export interface QuestionDetailResponse {
@@ -45,5 +45,23 @@ export function useQuestionSolution(id: string, isAuthenticated: boolean) {
     },
     enabled: !!id && isAuthenticated,
     retry: false, // If it fails due to auth, don't keep retrying
+  })
+}
+
+export function useGenerateExplanation(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const res = await apiClient(`/api/v1/questions/${id}/explanation/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      if (!res.ok) throw new Error('Failed to generate explanation')
+      return res.json() as Promise<QuestionSolutionResponse>
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(['questions', id, 'solution'], data)
+    }
   })
 }

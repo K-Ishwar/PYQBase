@@ -157,18 +157,17 @@ CREATE INDEX idx_questions_search ON questions USING GIN(search_vector);
 -- ==========================================
 -- TRIGGERS
 -- ==========================================
--- Auto-populate search_vector from question_stem->>'en' on INSERT/UPDATE
+-- Auto-populate search_vector from question_stem->>'en' and options on INSERT/UPDATE
 CREATE OR REPLACE FUNCTION update_questions_search_vector()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Using the 'english' dictionary for text search
-    NEW.search_vector := to_tsvector('english', COALESCE(NEW.question_stem->>'en', ''));
+    NEW.search_vector := to_tsvector('english', COALESCE(NEW.question_stem->>'en', '') || ' ' || COALESCE(NEW.options::text, ''));
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_update_questions_search_vector
-BEFORE INSERT OR UPDATE OF question_stem ON questions
+BEFORE INSERT OR UPDATE OF question_stem, options ON questions
 FOR EACH ROW
 EXECUTE FUNCTION update_questions_search_vector();
 

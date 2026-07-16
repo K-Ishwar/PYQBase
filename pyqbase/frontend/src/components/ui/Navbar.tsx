@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
-import { Search, Moon, Sun, X, User as UserIcon, LogOut } from "lucide-react"
+import { Moon, Sun, User as UserIcon, LogOut } from "lucide-react"
 import { useAuth } from "@/components/providers/auth-provider"
 import { createClient } from "@/lib/supabase/client"
 import { MagneticButton } from "@/components/ui/MagneticButton"
@@ -13,45 +13,15 @@ import { motion } from "framer-motion"
 export function Navbar() {
   const { setTheme, theme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
-  const [searchOpen, setSearchOpen] = React.useState(false)
-  const [searchQuery, setSearchQuery] = React.useState("")
   const [hoveredPath, setHoveredPath] = React.useState<string | null>(null)
   const router = useRouter()
   const pathname = usePathname()
-  const inputRef = React.useRef<HTMLInputElement>(null)
   
-  const { user, isLoading, isAdmin } = useAuth()
+  const { user, isLoading, isAdmin, isActualAdmin, adminViewMode, setAdminViewMode } = useAuth()
   const [profileOpen, setProfileOpen] = React.useState(false)
   const supabase = createClient()
 
   React.useEffect(() => { setMounted(true) }, [])
-
-  // Focus input when search opens
-  React.useEffect(() => {
-    if (searchOpen) inputRef.current?.focus()
-  }, [searchOpen])
-
-  // ⌘K / Ctrl+K shortcut
-  React.useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault()
-        setSearchOpen((o) => !o)
-      }
-      if (e.key === 'Escape') setSearchOpen(false)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
-
-  function handleSearchSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
-      setSearchOpen(false)
-      setSearchQuery("")
-    }
-  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -78,31 +48,25 @@ export function Navbar() {
               Admin
             </Link>
           )}
+          
+          {isActualAdmin && (
+            <select
+              value={adminViewMode}
+              onChange={(e) => {
+                setAdminViewMode(e.target.value as any)
+                window.location.reload()
+              }}
+              className="text-xs bg-muted border-none rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-primary/50 text-muted-foreground font-medium"
+            >
+              <option value="real">Real Admin</option>
+              <option value="premium">Test: Premium User</option>
+              <option value="free">Test: Free User</option>
+              <option value="guest">Test: Logged Out</option>
+            </select>
+          )}
         </div>
 
-        {/* Inline search bar (shown when open) */}
-        {searchOpen ? (
-          <form onSubmit={handleSearchSubmit} className="flex-1 mx-6 flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                ref={inputRef}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder='Try "El Nino" or "Fundamental Rights"…'
-                className="w-full rounded-full border border-primary bg-background py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => setSearchOpen(false)}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </form>
-        ) : (
-          /* Center Nav Links */
+        {/* Center Nav Links */}
           <div 
             className="hidden md:flex items-center gap-1 text-sm font-medium"
             onMouseLeave={() => setHoveredPath(null)}
@@ -149,16 +113,8 @@ export function Navbar() {
               )
             })}
           </div>
-        )}
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setSearchOpen((o) => !o)}
-            className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            aria-label="Open search"
-          >
-            <Search className="h-5 w-5" />
-          </button>
 
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

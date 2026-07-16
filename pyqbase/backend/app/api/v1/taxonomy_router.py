@@ -16,7 +16,7 @@ async def list_subjects(db: AsyncSession = Depends(get_db)):
 
 @router.get("/all")
 async def get_all_taxonomy(db: AsyncSession = Depends(get_db)):
-    """Bulk endpoint to fetch all subjects, topics, and subtopics in one request."""
+    """Bulk endpoint to fetch all subjects and topics in one request."""
     subjects, topics = await taxonomy_repo.get_all_taxonomy_data(db)
     return {
         "subjects": subjects,

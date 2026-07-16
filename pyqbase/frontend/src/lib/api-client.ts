@@ -38,6 +38,14 @@ export async function apiClient(endpoint: string, options: RequestInit = {}) {
     if (options.body && typeof options.body === 'string' && !headers.has('Content-Type')) {
       headers.set('Content-Type', 'application/json');
     }
+    
+    // Inject admin view override header if present
+    if (typeof window !== 'undefined') {
+      const override = localStorage.getItem('admin_view_override');
+      if (override && override !== 'real') {
+        headers.set('X-Admin-Override', override);
+      }
+    }
 
     const url = `${API_BASE_URL}${endpoint}`;
     

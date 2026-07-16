@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { ArrowRight, BookOpen, Clock, Target, ShieldCheck, Landmark, Briefcase, Compass } from "lucide-react"
 import { SpotlightCard } from "@/components/ui/SpotlightCard"
 import { MagneticButton } from "@/components/ui/MagneticButton"
+import { ExamQuestionList } from "./ExamQuestionList"
 
 const EXAM_DATA = {
   "upsc-cse": {
@@ -12,7 +13,7 @@ const EXAM_DATA = {
     stats: "15,200+ PYQs",
     icon: <Landmark className="w-12 h-12 text-primary" />,
     years: [2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013],
-    subjects: ["Polity", "History", "Geography", "Economy", "Environment", "Science & Tech"]
+    subjects: ["Polity", "History", "Geography", "Economy", "Mathematics", "Reasoning"]
   },
   "upsc-capf": {
     name: "UPSC CAPF",
@@ -21,7 +22,7 @@ const EXAM_DATA = {
     stats: "5,400+ PYQs",
     icon: <ShieldCheck className="w-12 h-12 text-green-500" />,
     years: [2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016],
-    subjects: ["General Ability", "Intelligence", "Essay", "Comprehension"]
+    subjects: ["General Ability", "Reasoning", "Mathematics", "English"]
   },
   "mpsc-rajyseva": {
     name: "MPSC Rajyseva",
@@ -30,7 +31,7 @@ const EXAM_DATA = {
     stats: "8,100+ PYQs",
     icon: <Briefcase className="w-12 h-12 text-orange-500" />,
     years: [2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017],
-    subjects: ["History of Maharashtra", "Geography of Maharashtra", "Indian Polity", "Economy"]
+    subjects: ["History of Maharashtra", "Geography of Maharashtra", "Polity", "Economy"]
   },
   "upsc-cds": {
     name: "UPSC CDS",
@@ -39,7 +40,7 @@ const EXAM_DATA = {
     stats: "6,800+ PYQs",
     icon: <Compass className="w-12 h-12 text-red-500" />,
     years: [2024, 2023, 2022, 2021, 2020, 2019, 2018],
-    subjects: ["English", "General Knowledge", "Elementary Mathematics"]
+    subjects: ["English", "General Knowledge", "Mathematics"]
   }
 }
 
@@ -109,34 +110,16 @@ export default async function ExamDashboardPage({ params }: { params: { examId: 
         </div>
       </section>
 
-      {/* Browse by Year */}
+      {/* Questions List */}
       <section className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight mb-2">Browse by Year</h2>
-            <p className="text-muted-foreground">Select a year to view all questions from that exam.</p>
+            <h2 className="text-3xl font-bold tracking-tight mb-2">Exam Questions</h2>
+            <p className="text-muted-foreground">Browse all previous year questions for this exam.</p>
           </div>
         </div>
         
-        {displayYears.length === 0 ? (
-          <div className="text-muted-foreground p-4 bg-card rounded-xl border">No questions available for this exam yet.</div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {displayYears.map((year) => (
-              <SpotlightCard key={year}>
-                <Link
-                  href={`/search?exam=${exam.id}&year=${year}`}
-                  className="group flex flex-col items-center justify-center p-6 bg-card h-full w-full rounded-2xl relative"
-                >
-                  <span className="text-2xl font-black group-hover:text-primary transition-colors">{year}</span>
-                  <span className="text-xs text-muted-foreground mt-1 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all font-bold flex items-center gap-1">
-                    View <ArrowRight className="w-3 h-3" />
-                  </span>
-                </Link>
-              </SpotlightCard>
-            ))}
-          </div>
-        )}
+        <ExamQuestionList examId={exam.id} years={displayYears} />
       </section>
 
       {/* Browse by Subject */}
@@ -156,7 +139,7 @@ export default async function ExamDashboardPage({ params }: { params: { examId: 
             {liveSubjects.map((subject) => (
               <Link
                 key={subject}
-                href={`/search?exam=${exam.id}&q=${subject}`}
+                href={`/subjects/${subject.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-')}`}
                 className="group flex items-center p-5 rounded-2xl border bg-card hover:border-primary/50 transition-all shadow-sm group-hover:shadow-md"
               >
                 <div className="bg-primary/10 text-primary p-3 rounded-xl mr-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">

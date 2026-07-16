@@ -71,8 +71,6 @@ if os.getenv("ENVIRONMENT") == "production" and _sentry_dsn:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Start ELO background worker
-    elo_task = asyncio.create_task(_elo_worker_loop())
-    logger.info("ELO worker started.")
     
     # Start Heatmap scheduler and worker
     heatmap_sched_task = asyncio.create_task(heatmap_scheduler_loop())

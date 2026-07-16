@@ -39,6 +39,11 @@ export default function SubjectsPage() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold group-hover:text-primary transition-colors">{subject.name}</h3>
+                  {subject.question_count !== undefined && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {subject.question_count.toLocaleString()} question{subject.question_count !== 1 ? 's' : ''}
+                    </p>
+                  )}
                 </div>
               </div>
             </Link>

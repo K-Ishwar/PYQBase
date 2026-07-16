@@ -41,7 +41,7 @@ function SearchContent() {
   const targetExam = user?.user_metadata?.target_exam
 
   const [inputValue, setInputValue] = useState(searchParams.get('q') ?? '')
-  const [exam, setExam] = useState(searchParams.get('exam') ?? targetExam ?? '')
+  const [exam, setExam] = useState(searchParams.get('exam') ?? '')
   const [year, setYear] = useState<number | null>(searchParams.get('year') ? Number(searchParams.get('year')) : null)
   const subjectId = searchParams.get('subject_id')
   const topicId = searchParams.get('topic_id')
@@ -115,79 +115,6 @@ function SearchContent() {
       <div className="flex flex-col md:flex-row gap-8">
         {/* ── Sidebar Filters ──────────────────────────────────────────────── */}
         <aside className="md:w-52 flex-shrink-0 space-y-6">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
-              Exam
-            </p>
-            <div className="flex flex-col gap-2">
-              {EXAMS.map((e) => (
-                <button
-                  key={e.value}
-                  onClick={() => setExam(e.value)}
-                  className={pillClass(exam === e.value)}
-                >
-                  {e.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {year && (
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
-                Year
-              </p>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => setYear(null)}
-                  className={pillClass(true)}
-                >
-                  {year} &times;
-                </button>
-              </div>
-            </div>
-          )}
-
-          {subjectId && (
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
-                Subject
-              </p>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => {
-                    const params = new URLSearchParams(window.location.search);
-                    params.delete('subject_id');
-                    router.replace(`/search?${params.toString()}`, { scroll: false });
-                  }}
-                  className={pillClass(true)}
-                >
-                  Filtered Subject &times;
-                </button>
-              </div>
-            </div>
-          )}
-
-          {topicId && (
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
-                Topic
-              </p>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => {
-                    const params = new URLSearchParams(window.location.search);
-                    params.delete('topic_id');
-                    router.replace(`/search?${params.toString()}`, { scroll: false });
-                  }}
-                  className={pillClass(true)}
-                >
-                  Filtered Topic &times;
-                </button>
-              </div>
-            </div>
-          )}
-
           <div>
             <div className="flex justify-between items-center mb-3">
               <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">

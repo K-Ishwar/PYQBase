@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Activity } from "lucide-react"
+import { SubjectQuestionList } from "./SubjectQuestionList"
 
 interface TopicHeatmapData {
   topic_id: string
@@ -66,7 +67,7 @@ export default function SubjectHeatmapPage() {
   }
 
   return (
-    <div className="container py-10 max-w-5xl">
+    <div className="container py-10 max-w-7xl">
       <div className="mb-8">
         <Link href="/subjects" className="text-muted-foreground hover:text-foreground flex items-center gap-2 mb-4 text-sm w-fit transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to Subjects
@@ -82,49 +83,57 @@ export default function SubjectHeatmapPage() {
             </div>
           </div>
           
-          <Link href={`/search?subject_id=${id}`}>
-            <button className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-xl font-bold hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20">
-              View All Questions
-            </button>
-          </Link>
+          {/* Removed view all questions button */}
         </div>
       </div>
 
-      <div className="bg-card border rounded-2xl p-8 shadow-sm">
-        <h2 className="text-xl font-bold mb-6">Topic Frequency Analysis</h2>
-        
-        {data.topics.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8">No historical data available for this subject yet.</p>
-        ) : (
-          <div className="space-y-4">
-            {data.topics.map(topic => (
-              <div key={topic.topic_id} className="flex items-center gap-4">
-                <div className="w-1/3 truncate font-medium text-sm" title={topic.topic_name}>
-                  {topic.topic_name}
-                </div>
-                <div className="w-2/3 flex items-center gap-3">
-                  <div className="flex-1 h-8 bg-secondary rounded-full overflow-hidden flex items-center relative">
-                    <div 
-                      className={`h-full absolute left-0 top-0 transition-all duration-1000 ${getColorClass(topic.weightage_percent)}`}
-                      style={{ width: `${Math.max(topic.weightage_percent, 1)}%` }}
-                    />
-                  </div>
-                  <div className="w-24 text-right text-sm">
-                    <span className="font-bold">{topic.weightage_percent.toFixed(1)}%</span>
-                    <span className="text-muted-foreground text-xs ml-1">({topic.question_count} Qs)</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        {/* Left Side: Questions */}
+        <div className="lg:col-span-3 order-2 lg:order-1">
+          <SubjectQuestionList subjectId={id as string} />
+        </div>
 
-      <div className="mt-8 flex gap-4 text-sm text-muted-foreground flex-wrap">
-        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500"></div> &gt; 20% (Critical)</div>
-        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-orange-500"></div> 10-20% (High Yield)</div>
-        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-400"></div> 5-10% (Medium)</div>
-        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-200"></div> 1-5% (Low)</div>
+        {/* Right Side: Heatmap Sidebar */}
+        <div className="lg:col-span-1 order-1 lg:order-2">
+          <div className="bg-card border rounded-2xl p-6 shadow-sm sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto flex flex-col">
+            <h2 className="text-xl font-bold mb-6">Topic Frequency</h2>
+            
+            {data.topics.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">No historical data available for this subject yet.</p>
+            ) : (
+              <div className="space-y-4 flex-1">
+                {data.topics.map(topic => (
+                  <div key={topic.topic_id} className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between">
+                      <div className="truncate font-medium text-sm w-3/4" title={topic.topic_name}>
+                        {topic.topic_name}
+                      </div>
+                      <div className="text-right text-sm">
+                        <span className="font-bold">{topic.weightage_percent.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden flex items-center relative">
+                      <div 
+                        className={`h-full absolute left-0 top-0 transition-all duration-1000 ${getColorClass(topic.weightage_percent)}`}
+                        style={{ width: `${Math.max(topic.weightage_percent, 1)}%` }}
+                      />
+                    </div>
+                    <div className="text-muted-foreground text-xs text-right">
+                      {topic.question_count} Qs
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-8 flex flex-col gap-2 text-xs text-muted-foreground pt-4 border-t">
+              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500"></div> &gt; 20% (Critical)</div>
+              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-orange-500"></div> 10-20% (High Yield)</div>
+              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-400"></div> 5-10% (Medium)</div>
+              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-200"></div> 1-5% (Low)</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

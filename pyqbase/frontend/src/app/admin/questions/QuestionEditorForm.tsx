@@ -3,10 +3,10 @@
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { apiClient } from '@/lib/api-client'
-import { useSubjects, useTopics, useSubtopics } from '@/lib/hooks/useTaxonomy'
+import { useSubjects, useTopics } from '@/lib/hooks/useTaxonomy'
 
 // ─── Zod Schema — mirrors backend QuestionUpsertPayload ─────────────────────
 
@@ -23,7 +23,6 @@ const questionSchema = z.object({
   correct_option: z.enum(['A', 'B', 'C', 'D', 'DROPPED']),
   subject_id: z.string().uuid('Please select a subject'),
   topic_id: z.string().uuid('Please select a topic'),
-  subtopic_id: z.string().uuid('Please select a subtopic'),
   has_image: z.boolean().default(false),
   image_url: z.string().url().optional().or(z.literal('')),
   parse_confidence: z.coerce.number().min(0).max(1).optional(),
@@ -84,17 +83,10 @@ export function QuestionEditorForm({ questionId, defaultValues }: QuestionEditor
   // Reset topic when subject changes
   useEffect(() => {
     setValue('topic_id', '' as never)
-    setValue('subtopic_id', '' as never)
   }, [selectedSubjectId, setValue])
-
-  // Reset subtopic when topic changes
-  useEffect(() => {
-    setValue('subtopic_id', '' as never)
-  }, [selectedTopicId, setValue])
 
   const { data: availableSubjects = [], isLoading: isLoadingSubjects } = useSubjects()
   const { data: availableTopics = [], isLoading: isLoadingTopics } = useTopics(selectedSubjectId || undefined)
-  const { data: availableSubtopics = [], isLoading: isLoadingSubtopics } = useSubtopics(selectedTopicId || undefined)
 
   // ── Image Upload (direct to Supabase Storage) ─────────────────────────────
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -143,7 +135,7 @@ export function QuestionEditorForm({ questionId, defaultValues }: QuestionEditor
         has_image: values.has_image,
         image_url: values.image_url || null,
         parse_confidence: values.parse_confidence ?? null,
-        subtopic_id: values.subtopic_id,
+        topic_id: values.topic_id,
         manual_review_approved: values.manual_review_approved,
       }
 
@@ -169,8 +161,7 @@ export function QuestionEditorForm({ questionId, defaultValues }: QuestionEditor
   const labelClass = 'block text-sm font-medium mb-1'
   const errorClass = 'mt-1 text-xs text-destructive'
 
-  return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl">
+  return <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl">
       {submitStatus === 'success' && (
         <div className="rounded-lg border border-success/30 bg-success-bg p-4 text-sm text-success font-medium">
           ✓ Question saved successfully!
@@ -278,15 +269,6 @@ export function QuestionEditorForm({ questionId, defaultValues }: QuestionEditor
             </select>
             {errors.topic_id && <p className={errorClass}>{errors.topic_id.message}</p>}
           </div>
-          <div>
-            <label className={labelClass}>Subtopic * {isLoadingSubtopics && <span className="animate-pulse">...</span>}</label>
-            <select {...register('subtopic_id')} className={fieldClass} disabled={!selectedTopicId}>
-              <option value="">Select subtopic…</option>
-              {availableSubtopics.map((st) => (
-                <option key={st.id} value={st.id}>{st.name}</option>
-              ))}
-            </select>
-            {errors.subtopic_id && <p className={errorClass}>{errors.subtopic_id.message}</p>}
           </div>
         </div>
       </section>
@@ -386,5 +368,4 @@ export function QuestionEditorForm({ questionId, defaultValues }: QuestionEditor
         </a>
       </div>
     </form>
-  )
 }

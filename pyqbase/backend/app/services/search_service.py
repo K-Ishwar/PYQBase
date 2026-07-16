@@ -27,9 +27,9 @@ _CACHE_MAX = 512   # max entries to avoid unbounded growth
 
 
 def _cache_key(q: str, exam: Optional[str], subject_id: Optional[str],
-               topic_id: Optional[str], year: Optional[int], sort: str, limit: int, offset: int) -> str:
+               topic_id: Optional[str], year: Optional[int], sort: str, limit: int, offset: int, include_explanation: bool) -> str:
     raw = json.dumps(
-        [q, exam, subject_id, topic_id, year, sort, limit, offset], sort_keys=True
+        [q, exam, subject_id, topic_id, year, sort, limit, offset, include_explanation], sort_keys=True
     )
     return hashlib.sha256(raw.encode()).hexdigest()
 
@@ -70,6 +70,7 @@ async def search_questions(
     sort: str = "relevance",
     limit: int = 20,
     offset: int = 0,
+    include_explanation: bool = False,
 ) -> SearchResponse:
     """
     Full-text search across questions using Postgres ts_rank.
@@ -81,7 +82,7 @@ async def search_questions(
     """
     limit = min(limit, 100)  # hard cap
 
-    ck = _cache_key(q or "", exam, subject_id, topic_id, year, sort, limit, offset)
+    ck = _cache_key(q or "", exam, subject_id, topic_id, year, sort, limit, offset, include_explanation)
     cached = _cache_get(ck)
     if cached:
         return cached
@@ -96,6 +97,9 @@ async def search_questions(
             q.paper,
             q.question_number,
             q.question_stem,
+            q.options,
+            q.correct_option,
+            q.explanation,
             q.question_type,
             q.has_image,
             q.image_url,
@@ -177,7 +181,10 @@ async def search_questions(
             year=row["year"],
             paper=row["paper"],
             question_number=row["question_number"],
-            question_stem=dict(row["question_stem"]),
+            question_stem=row["question_stem"] if isinstance(row["question_stem"], dict) else json.loads(row["question_stem"] or "{}"),
+            options=row["options"] if isinstance(row["options"], dict) else json.loads(row["options"] or "{}"),
+            correct_option=row["correct_option"],
+            explanation=(row["explanation"] if isinstance(row["explanation"], dict) else json.loads(row["explanation"])) if row["explanation"] and include_explanation else None,
             question_type=row["question_type"],
             has_image=row["has_image"],
             image_url=row["image_url"],

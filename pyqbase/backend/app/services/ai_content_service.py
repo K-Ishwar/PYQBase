@@ -294,3 +294,64 @@ async def enrich_batch(batch_id: UUID):
             await ingestion_repo.update_batch_status(
                 db, batch_id, IngestionStatus.failed, error_log=error_msg
             )
+
+async def generate_explanation(question_stem: dict, options: dict, provided_correct_option: str) -> dict:
+    """
+    Generate an explanation for a question using Groq.
+    Also verifies and fixes the correct option if the provided one is wrong.
+    Returns a dict with 'correct_option' and 'explanation'.
+    """
+    stem_text = question_stem.get("en", str(question_stem)) if isinstance(question_stem, dict) else str(question_stem)
+    
+    options_text = ""
+    if options:
+        for k, v in options.items():
+            options_text += f"{k}: {v}\n"
+            
+    sys_prompt = f"""You are an expert tutor for competitive exams.
+A student needs an explanation for a multiple choice question.
+
+We have a provided answer key, but it MIGHT be wrong. 
+Your task is:
+1. Evaluate the question and all options.
+2. Determine the true correct option. If the provided correct option is wrong, fix it.
+3. Provide a clear, appropriately sized explanation (not too short, not too long, around 3-4 sentences). Explain why the correct option is correct.
+
+Rules:
+- You MUST return a JSON object with exactly two keys: "correct_option" and "explanation".
+- "correct_option" must be a single letter (e.g. "A", "B", "C", "D").
+- "explanation" must be plain text or markdown formatting.
+- Be direct and educational.
+- CRITICAL: When dealing with Mathematics or Reasoning, DO NOT use LaTeX or complex math scripts (e.g., no \\frac, \\sqrt, $x$). Use ONLY normal, user-friendly plain text and standard keyboard symbols (e.g., x^2, a/b, square root) so a normal user can read it as it is without needing special rendering.
+"""
+
+    user_msg = f"""Question:
+{stem_text}
+
+Options:
+{options_text}
+Provided Correct Option: {provided_correct_option}
+"""
+    
+    content = await call_groq_with_retry(
+        [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": user_msg},
+        ],
+        response_format={"type": "json_object"},
+        max_tokens=600,
+    )
+    
+    try:
+        import json
+        result = json.loads(content)
+        return {
+            "correct_option": result.get("correct_option", provided_correct_option),
+            "explanation": result.get("explanation", content.strip())
+        }
+    except Exception:
+        # Fallback if json parsing fails
+        return {
+            "correct_option": provided_correct_option,
+            "explanation": content.strip()
+        }

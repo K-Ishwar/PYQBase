@@ -8,9 +8,18 @@ from app.models.taxonomy import SubjectDb, TopicDb
 
 # ─── Subjects ──────────────────────────────────────────────────────────────────
 
-async def list_subjects(db: AsyncSession) -> list[SubjectDb]:
-    result = await db.execute(select(SubjectDb).order_by(SubjectDb.name))
-    return result.scalars().all()
+from app.models.question import QuestionDb
+
+async def list_subjects(db: AsyncSession) -> list[dict]:
+    stmt = (
+        select(SubjectDb.id, SubjectDb.name, func.count(QuestionDb.id).label("question_count"))
+        .outerjoin(TopicDb, SubjectDb.id == TopicDb.subject_id)
+        .outerjoin(QuestionDb, TopicDb.id == QuestionDb.topic_id)
+        .group_by(SubjectDb.id)
+        .order_by(SubjectDb.name)
+    )
+    result = await db.execute(stmt)
+    return [dict(row) for row in result.mappings()]
 
 async def get_subject(db: AsyncSession, subject_id: UUID) -> Optional[SubjectDb]:
     result = await db.execute(select(SubjectDb).where(SubjectDb.id == subject_id))
