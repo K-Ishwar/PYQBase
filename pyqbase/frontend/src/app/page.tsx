@@ -4,6 +4,7 @@ import { ExamCard } from "@/components/ui/ExamCard"
 import { Shield, BookOpen, GraduationCap, Landmark, BookCopy, Globe, ArrowRight, Lightbulb, Leaf, Component, ShieldCheck, Briefcase, Compass, Target, Clock, BrainCircuit, Search, Repeat, BarChart3, Database, Users, CheckCircle2 } from "lucide-react"
 import Link from "next/link"
 import { DailyRevisionCard } from "@/components/ui/DailyRevisionCard"
+import { FeedbackBar } from "@/components/ui/FeedbackBar"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/components/providers/auth-provider"
 import { Target as TargetIcon, Clock as ClockIcon } from "lucide-react"
@@ -237,6 +238,11 @@ export default function Home() {
             <p className="text-muted-foreground max-w-xs">Review detailed explanations and let the Spaced Repetition System schedule your revisions.</p>
           </div>
         </div>
+      </section>
+
+      {/* Feedback Section */}
+      <section className="pb-16 border-t pt-16">
+        <FeedbackBar />
       </section>
     </div>
   );

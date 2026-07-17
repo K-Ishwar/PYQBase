@@ -97,7 +97,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-lg">
         {/* Progress Dots */}
         <div className="flex justify-center gap-2 mb-8">

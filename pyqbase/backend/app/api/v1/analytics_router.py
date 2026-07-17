@@ -82,7 +82,7 @@ async def get_subject_heatmap(
     ]
     
     return SubjectHeatmapResponse(
-        subject_id=subject_id,
+        subject_id=actual_subject_id,
         subject_name=subject_name,
         topics=topics
     )

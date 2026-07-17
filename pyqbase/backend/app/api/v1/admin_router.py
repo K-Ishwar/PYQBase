@@ -14,6 +14,8 @@ from app.models.taxonomy import (
     TopicCreate, TopicResponse,
 )
 from app.models.audit_log import AuditLogDb
+from app.models.feedback import FeedbackDb, AdminFeedbackResponse
+from app.models.user import UserDb
 from app.repositories import question_repo, taxonomy_repo
 from app.services.audit_service import log_admin_action
 
@@ -104,19 +106,18 @@ async def list_questions_logue(
 ):
     """Returns a lightweight list of questions joined with subject and exam for logue grouping."""
     stmt = text("""
-        SELECT q.id, q.exam, q.year, q.question_stem->>'en' as statement, s.id as subject_id, s.name as subject_name
+        SELECT q.id, q.exam, q.year, q.paper, TO_CHAR(q.created_at, 'YYYY-MM-DD HH24:MI') as batch_time, q.question_stem->>'en' as statement, s.id as subject_id, s.name as subject_name
         FROM questions q
         LEFT JOIN topics t ON q.topic_id = t.id
         LEFT JOIN subjects s ON t.subject_id = s.id
-        ORDER BY q.exam, s.name, q.year DESC
+        ORDER BY q.created_at DESC, q.exam, q.year DESC, q.paper, s.name
     """)
     result = await db.execute(stmt)
     return [dict(r) for r in result.mappings()]
 
 
 class DeleteGroupPayload(BaseModel):
-    exam: str
-    subject_name: str
+    batch_time: str
 
 @router.delete("/questions/group", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_question_group(
@@ -124,33 +125,16 @@ async def delete_question_group(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_admin_user),
 ):
-    """Deletes all questions that belong to a specific exam and subject_name."""
-    # Since topic_id points to topics which point to subjects, we join to delete.
-    # PostgreSQL doesn't support JOIN in DELETE directly without USING.
-    # We can delete questions where id IN (subquery)
-    
-    if payload.subject_name == "Unknown":
-        # Handle cases where subject might be missing
-        stmt = text("""
-            DELETE FROM questions
-            WHERE exam = :exam AND (topic_id IS NULL OR topic_id NOT IN (SELECT id FROM topics))
-        """)
-    else:
-        stmt = text("""
-            DELETE FROM questions
-            WHERE id IN (
-                SELECT q.id
-                FROM questions q
-                JOIN topics t ON q.topic_id = t.id
-                JOIN subjects s ON t.subject_id = s.id
-                WHERE q.exam = :exam AND s.name = :subject_name
-            )
-        """)
+    """Deletes all questions that belong to a specific batch (batch_time)."""
+    stmt = text("""
+        DELETE FROM questions
+        WHERE TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI') = :batch_time
+    """)
         
-    await db.execute(stmt, {"exam": payload.exam, "subject_name": payload.subject_name})
+    await db.execute(stmt, {"batch_time": payload.batch_time})
     await db.commit()
     
-    await log_admin_action(db, admin.id, "DELETE", f"Deleted all questions for {payload.exam} - {payload.subject_name}")
+    await log_admin_action(db, admin.id, "DELETE", f"Deleted all questions at {payload.batch_time}")
     return None
 
 
@@ -439,3 +423,57 @@ async def test_query(db: AsyncSession = Depends(get_db)):
         return {"data": [dict(row._mapping) for row in res]}
     except Exception as e:
         return {"error": str(e)}
+
+@router.get("/feedbacks", response_model=list[AdminFeedbackResponse])
+async def list_feedbacks(
+    limit: int = 100,
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    """List all feedbacks with user details (admin only)."""
+    stmt = (
+        select(
+            FeedbackDb,
+            UserDb.email.label("user_email"),
+            func.split_part(UserDb.email, '@', 1).label("user_name")
+        )
+        .join(UserDb, FeedbackDb.user_id == UserDb.id)
+        .order_by(FeedbackDb.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    result = await db.execute(stmt)
+    
+    feedbacks = []
+    for fb, email, name in result:
+        feedbacks.append(
+            AdminFeedbackResponse(
+                id=fb.id,
+                user_id=fb.user_id,
+                message=fb.message,
+                status=fb.status,
+                created_at=fb.created_at,
+                user_email=email,
+                user_name=name
+            )
+        )
+    return feedbacks
+
+@router.delete("/feedbacks/{feedback_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_feedback(
+    feedback_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    """Delete a specific feedback (admin only)."""
+    stmt = select(FeedbackDb).where(FeedbackDb.id == feedback_id)
+    result = await db.execute(stmt)
+    feedback = result.scalar_one_or_none()
+    
+    if not feedback:
+        raise HTTPException(status_code=404, detail="Feedback not found")
+        
+    await db.delete(feedback)
+    await db.commit()
+    return None

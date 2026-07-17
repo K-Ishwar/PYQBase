@@ -157,7 +157,12 @@ async def search_questions(
         filters += " AND t.id = :topic_id"
         params["topic_id"] = topic_id
     elif subject_id:
-        filters += " AND s.id = :subject_id"
+        import uuid
+        try:
+            uuid.UUID(subject_id)
+            filters += " AND s.id = :subject_id"
+        except ValueError:
+            filters += " AND replace(replace(lower(s.name), ' & ', '-'), ' ', '-') = :subject_id"
         params["subject_id"] = subject_id
 
     # ── Year sort fallback ──────────────────────────────────────────────────

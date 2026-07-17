@@ -63,7 +63,7 @@ export default function SubjectHeatmapPage() {
     if (percent > 10) return "bg-orange-500 text-white border-orange-600"
     if (percent > 5) return "bg-amber-400 text-amber-950 border-amber-500"
     if (percent > 0) return "bg-yellow-200 text-yellow-900 border-yellow-300"
-    return "bg-slate-100 text-slate-500 border-slate-200"
+    return "bg-muted text-muted-foreground border-border"
   }
 
   return (

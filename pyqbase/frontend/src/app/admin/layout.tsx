@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { LayoutDashboard, HelpCircle, Layers, UploadCloud, Users } from 'lucide-react'
+import { LayoutDashboard, HelpCircle, Layers, UploadCloud, Users, MessageSquare } from 'lucide-react'
 
 async function getAdminUser() {
   const cookieStore = cookies()
@@ -33,13 +33,13 @@ export default async function AdminLayout({
   const admin = await getAdminUser()
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900">
+    <div className="flex min-h-screen bg-background">
       {/* Admin Sidebar */}
       <aside className="w-64 flex-shrink-0 border-r border-border bg-card">
         <div className="p-6 border-b border-border">
           <div className="flex items-center gap-2">
             <span className="text-lg font-bold text-primary">PYQBase</span>
-            <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-destructive">
+            <span className="rounded bg-primary text-primary-foreground px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm">
               Admin
             </span>
           </div>
@@ -52,6 +52,7 @@ export default async function AdminLayout({
           <AdminNavLink href="/admin/taxonomy" label="Taxonomy" icon={<Layers className="w-5 h-5" />} />
           <AdminNavLink href="/admin/ingestion" label="Bulk Ingestion" icon={<UploadCloud className="w-5 h-5" />} />
           <AdminNavLink href="/admin/reports" label="Data Reports" icon={<LayoutDashboard className="w-5 h-5" />} />
+          <AdminNavLink href="/admin/feedbacks" label="Feedbacks" icon={<MessageSquare className="w-5 h-5" />} />
         </nav>
       </aside>
 

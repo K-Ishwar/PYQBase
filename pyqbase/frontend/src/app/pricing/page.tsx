@@ -75,53 +75,53 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-24">
+    <div className="min-h-screen bg-background py-24">
       {/* Load Razorpay SDK securely */}
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+          <h2 className="text-3xl font-extrabold text-foreground sm:text-4xl">
             Simple, transparent pricing
           </h2>
-          <p className="mt-4 text-xl text-gray-600">
+          <p className="mt-4 text-xl text-muted-foreground">
             Unlock the ultimate UPSC preparation toolkit. No hidden fees.
           </p>
         </div>
 
         <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {/* Free Plan */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 flex flex-col">
-            <h3 className="text-2xl font-semibold text-gray-900">Freemium</h3>
+          <div className="bg-card rounded-2xl shadow-sm border border-border p-8 flex flex-col">
+            <h3 className="text-2xl font-semibold text-foreground">Freemium</h3>
             <div className="mt-4 flex items-baseline text-5xl font-extrabold">
               ₹0
-              <span className="ml-1 text-xl font-medium text-gray-500">/forever</span>
+              <span className="ml-1 text-xl font-medium text-muted-foreground">/forever</span>
             </div>
-            <p className="mt-4 text-gray-500">Essential access for daily practice.</p>
+            <p className="mt-4 text-muted-foreground">Essential access for daily practice.</p>
             <ul className="mt-8 space-y-4 flex-1">
               <li className="flex items-center">
-                <Check className="h-5 w-5 text-indigo-500 mr-3" />
+                <Check className="h-5 w-5 text-primary mr-3" />
                 <span>30 Questions per day limit</span>
               </li>
               <li className="flex items-center">
-                <Check className="h-5 w-5 text-indigo-500 mr-3" />
+                <Check className="h-5 w-5 text-primary mr-3" />
                 <span>1 Custom Mock Test per week</span>
               </li>
-              <li className="flex items-center text-gray-400">
+              <li className="flex items-center text-muted-foreground opacity-70">
                 <Check className="h-5 w-5 mr-3" />
                 <span>No Weak-Area Mock Tests</span>
               </li>
             </ul>
             <button
               disabled
-              className="mt-8 w-full bg-gray-100 text-gray-500 rounded-lg px-4 py-3 font-semibold"
+              className="mt-8 w-full bg-muted text-muted-foreground rounded-lg px-4 py-3 font-semibold"
             >
               Current Plan
             </button>
           </div>
 
           {/* Premium Plan */}
-          <div className="bg-indigo-600 rounded-2xl shadow-lg border border-indigo-600 p-8 flex flex-col text-white relative transform md:-scale-y-100 md:scale-105" style={{ transform: "none" }}>
+          <div className="bg-primary rounded-2xl shadow-lg border border-primary p-8 flex flex-col text-primary-foreground relative transform md:-scale-y-100 md:scale-105" style={{ transform: "none" }}>
             <div className="absolute top-0 right-0 -mr-2 -mt-2">
               <span className="bg-gradient-to-r from-pink-500 to-orange-400 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
                 Most Popular
@@ -130,10 +130,10 @@ export default function PricingPage() {
             <h3 className="text-2xl font-semibold">Premium</h3>
             <div className="mt-4 flex items-baseline text-5xl font-extrabold">
               {PLANS.annual.price}
-              <span className="ml-1 text-xl font-medium text-indigo-200">{PLANS.annual.period}</span>
+              <span className="ml-1 text-xl font-medium text-primary-foreground/80">{PLANS.annual.period}</span>
             </div>
-            <p className="mt-4 text-indigo-100">Unlimited access to supercharge your prep.</p>
-            <ul className="mt-8 space-y-4 flex-1 text-indigo-50">
+            <p className="mt-4 text-primary-foreground/90">Unlimited access to supercharge your prep.</p>
+            <ul className="mt-8 space-y-4 flex-1 text-primary-foreground">
               <li className="flex items-center">
                 <Check className="h-5 w-5 text-green-400 mr-3" />
                 <span>Unlimited daily questions</span>
@@ -154,14 +154,14 @@ export default function PricingPage() {
             <button
               onClick={() => handleUpgrade("annual")}
               disabled={loadingPlan === "annual"}
-              className="mt-8 w-full bg-white text-indigo-600 rounded-lg px-4 py-3 font-bold hover:bg-gray-50 transition-colors"
+              className="mt-8 w-full bg-background text-primary rounded-lg px-4 py-3 font-bold hover:bg-muted transition-colors"
             >
               {loadingPlan === "annual" ? "Processing..." : "Upgrade to Annual"}
             </button>
             <button
               onClick={() => handleUpgrade("monthly")}
               disabled={loadingPlan === "monthly"}
-              className="mt-4 w-full bg-indigo-700 text-white rounded-lg px-4 py-3 font-semibold hover:bg-indigo-800 transition-colors"
+              className="mt-4 w-full bg-primary-foreground/10 text-primary-foreground rounded-lg px-4 py-3 font-semibold hover:bg-primary-foreground/20 transition-colors"
             >
               {loadingPlan === "monthly" ? "Processing..." : `Or ${PLANS.monthly.price} ${PLANS.monthly.period}`}
             </button>

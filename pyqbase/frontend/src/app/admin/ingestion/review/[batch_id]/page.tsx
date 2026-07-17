@@ -45,7 +45,7 @@ function StatusBadge({ status }: { status: string }) {
       ? "bg-red-100 text-red-800"
       : status === "needs_edit"
       ? "bg-orange-100 text-orange-800"
-      : "bg-slate-100 text-slate-700"
+      : "bg-muted text-muted-foreground"
   return <span className={`text-xs px-2 py-1 rounded-full font-medium capitalize ${cls}`}>{status.replace("_", " ")}</span>
 }
 
@@ -449,7 +449,7 @@ export default function ReviewBatchPage() {
               <div key={d.id} className="flex justify-between items-start bg-white border border-amber-200 rounded-lg p-3 gap-3">
                 <div className="flex-1 min-w-0">
                   <span className="text-xs font-bold text-amber-800 mr-2">Q{d.question_number}</span>
-                  <span className="text-sm text-gray-700 line-clamp-2">{d.raw_question_stem}</span>
+                  <span className="text-sm text-muted-foreground line-clamp-2">{d.raw_question_stem}</span>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button
@@ -568,7 +568,7 @@ export default function ReviewBatchPage() {
                   {q.review_status !== "pending" && (
                     <button
                       onClick={() => patchQuestion(q.id, { review_status: "pending" })}
-                      className="px-3 py-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-sm font-medium transition-colors"
+                      className="px-3 py-1.5 bg-muted text-muted-foreground hover:bg-secondary rounded-lg text-sm font-medium transition-colors"
                     >
                       ↩ Reset
                     </button>

@@ -152,12 +152,12 @@ export default function UsersAdminPage() {
                 <tr key={u.id} className="hover:bg-muted/30 transition-colors group">
                   <td className="px-6 py-4 font-medium group-hover:text-primary transition-colors">{u.email}</td>
                   <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${u.role === 'admin' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'}`}>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${u.role === 'admin' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-muted text-muted-foreground'}`}>
                       {u.role}
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${u.subscription_status === 'premium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'}`}>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${u.subscription_status === 'premium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-muted text-muted-foreground'}`}>
                       {u.subscription_status}
                     </span>
                   </td>
@@ -172,7 +172,7 @@ export default function UsersAdminPage() {
                            <ShieldOff className="w-4 h-4" />
                          </button>
                       ) : (
-                         <button onClick={() => updateUser(u.id, { role: 'admin' })} title="Promote to Admin" className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors">
+                         <button onClick={() => updateUser(u.id, { role: 'admin' })} title="Promote to Admin" className="p-2 bg-muted text-muted-foreground rounded-lg hover:bg-secondary transition-colors">
                            <Shield className="w-4 h-4" />
                          </button>
                       )}
@@ -183,7 +183,7 @@ export default function UsersAdminPage() {
                            <XCircle className="w-4 h-4" />
                          </button>
                       ) : (
-                         <button onClick={() => updateUser(u.id, { subscription_status: 'premium' })} title="Make Subscriber" className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors">
+                         <button onClick={() => updateUser(u.id, { subscription_status: 'premium' })} title="Make Subscriber" className="p-2 bg-muted text-muted-foreground rounded-lg hover:bg-secondary transition-colors">
                            <CheckCircle className="w-4 h-4" />
                          </button>
                       )}

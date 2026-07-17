@@ -32,6 +32,7 @@ from app.api.v1.mock_tests_router import router as mock_tests_router
 from app.api.v1.account_router import router as account_router
 from app.api.v1.payments_router import router as payments_router
 from app.api.v1.ingestion_router import router as ingestion_router
+from app.api.v1.feedbacks_router import router as feedbacks_router
 from app.services.elo_worker import run_elo_worker
 from app.services.heatmap_worker import heatmap_worker_loop, heatmap_scheduler_loop
 from app.services.account_worker import account_worker_loop, account_scheduler_loop
@@ -79,6 +80,17 @@ async def lifespan(app: FastAPI):
         await conn.execute(text("ALTER TABLE mock_tests ADD COLUMN IF NOT EXISTS user_answers JSONB NOT NULL DEFAULT '{}'::jsonb;"))
         await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_questions_topic_id ON questions (topic_id);"))
         await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_topics_subject_id ON topics (subject_id);"))
+        await conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS feedbacks (
+                id UUID PRIMARY KEY,
+                user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                message TEXT NOT NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'new',
+                created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()
+            );
+        """))
+        await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_feedbacks_user_id ON feedbacks (user_id);"))
+        await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_feedbacks_created_at ON feedbacks (created_at DESC);"))
     print("DB schema changes executed.")
 
     # Start ELO background worker
@@ -173,6 +185,7 @@ app.include_router(mock_tests_router, prefix="/api/v1", tags=["MockTests"])
 app.include_router(account_router, prefix="/api/v1", tags=["Account"])
 app.include_router(payments_router, prefix="/api/v1", tags=["Payments"])
 app.include_router(ingestion_router, prefix="/api/v1/admin/ingestion", tags=["Ingestion"])
+app.include_router(feedbacks_router, prefix="/api/v1/feedbacks", tags=["Feedbacks"])
 
 
 @app.get("/health")

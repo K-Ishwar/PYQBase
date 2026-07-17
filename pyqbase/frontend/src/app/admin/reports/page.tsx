@@ -90,13 +90,13 @@ export default function ReportsPage() {
 
       <div className="bg-card border rounded-xl shadow-sm overflow-hidden flex flex-col">
         {/* Filters */}
-        <div className="p-4 border-b bg-slate-50/50 flex gap-4 flex-wrap">
+        <div className="p-4 border-b bg-muted/30 flex gap-4 flex-wrap">
           <div className="flex flex-col gap-1 min-w-[200px]">
-            <label className="text-xs font-semibold text-muted-foreground uppercase">Filter by Exam</label>
+            <label className="text-xs font-semibold text-foreground uppercase tracking-wider">Filter by Exam</label>
             <select 
               value={examFilter} 
               onChange={e => setExamFilter(e.target.value)}
-              className="border rounded-md px-3 py-2 text-sm bg-background"
+              className="border rounded-md px-3 py-2 text-sm bg-background hover:border-primary/50 transition-colors"
             >
               <option value="">All Exams</option>
               {uniqueExams.map(ex => <option key={ex} value={ex}>{ex}</option>)}
@@ -104,11 +104,11 @@ export default function ReportsPage() {
           </div>
           
           <div className="flex flex-col gap-1 min-w-[200px]">
-            <label className="text-xs font-semibold text-muted-foreground uppercase">Filter by Subject</label>
+            <label className="text-xs font-semibold text-foreground uppercase tracking-wider">Filter by Subject</label>
             <select 
               value={subjectFilter} 
               onChange={e => setSubjectFilter(e.target.value)}
-              className="border rounded-md px-3 py-2 text-sm bg-background"
+              className="border rounded-md px-3 py-2 text-sm bg-background hover:border-primary/50 transition-colors"
             >
               <option value="">All Subjects</option>
               {uniqueSubjects.map(sub => <option key={sub} value={sub}>{sub}</option>)}
@@ -116,11 +116,11 @@ export default function ReportsPage() {
           </div>
 
           <div className="flex flex-col gap-1 min-w-[150px]">
-            <label className="text-xs font-semibold text-muted-foreground uppercase">Filter by Year</label>
+            <label className="text-xs font-semibold text-foreground uppercase tracking-wider">Filter by Year</label>
             <select 
               value={yearFilter} 
               onChange={e => setYearFilter(e.target.value)}
-              className="border rounded-md px-3 py-2 text-sm bg-background"
+              className="border rounded-md px-3 py-2 text-sm bg-background hover:border-primary/50 transition-colors"
             >
               <option value="">All Years</option>
               {uniqueYears.map(yr => <option key={yr} value={yr.toString()}>{yr}</option>)}
@@ -130,7 +130,7 @@ export default function ReportsPage() {
           <div className="flex items-end">
             <button 
               onClick={() => { setExamFilter(""); setSubjectFilter(""); setYearFilter("") }}
-              className="px-4 py-2 text-sm text-muted-foreground hover:bg-slate-100 rounded-md transition-colors"
+              className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
             >
               Clear Filters
             </button>
@@ -140,7 +140,7 @@ export default function ReportsPage() {
         {/* Data Table */}
         <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-slate-100 text-slate-600 sticky top-0 shadow-sm z-10">
+            <thead className="bg-muted text-muted-foreground sticky top-0 shadow-sm z-10">
               <tr>
                 <th className="px-6 py-3 font-bold">Exam</th>
                 <th className="px-6 py-3 font-bold">Subject</th>
@@ -157,7 +157,7 @@ export default function ReportsPage() {
                 </tr>
               ) : (
                 filteredData.map((row, idx) => (
-                  <tr key={`${row.exam}-${row.subject}-${row.year}-${idx}`} className="hover:bg-slate-50 transition-colors">
+                  <tr key={`${row.exam}-${row.subject}-${row.year}-${idx}`} className="hover:bg-muted/50 transition-colors">
                     <td className="px-6 py-3 font-medium">{row.exam}</td>
                     <td className="px-6 py-3">{row.subject}</td>
                     <td className="px-6 py-3">{row.year}</td>
@@ -167,7 +167,7 @@ export default function ReportsPage() {
               )}
             </tbody>
             {filteredData.length > 0 && (
-              <tfoot className="bg-slate-100 text-slate-700 font-bold sticky bottom-0 shadow-sm border-t-2 border-slate-200">
+              <tfoot className="bg-muted text-foreground font-bold sticky bottom-0 shadow-sm border-t-2 border-border">
                 <tr>
                   <td colSpan={3} className="px-6 py-4 text-right uppercase tracking-wider text-xs">
                     Grand Total
