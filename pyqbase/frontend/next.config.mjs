@@ -2,6 +2,9 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    instrumentationHook: true,
+  },
   async headers() {
     // In development, allow connecting to local HTTP backend
     const isDevelopment = process.env.NODE_ENV === 'development';
