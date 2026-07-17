@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSubjects } from '@/lib/hooks/useTaxonomy'
-import { useGenerateMockTest } from '@/lib/hooks/useMockTests'
+import { usePublicSubjects } from '@/lib/hooks/useTaxonomy'
+import { useGenerateMockTest, useAvailableQuestions } from '@/lib/hooks/useMockTests'
 import { useAuth } from '@/components/providers/auth-provider'
 import { Lock, Zap, BookOpen, Target, ChevronRight, History } from 'lucide-react'
 import Link from 'next/link'
@@ -14,15 +14,19 @@ import { apiClient } from '@/lib/api-client'
 export default function MockTestsPage() {
   const router = useRouter()
   const { user, isSubscribed } = useAuth()
-  const { data: subjects = [] } = useSubjects()
+  const { data: subjects = [] } = usePublicSubjects()
   const generateMutation = useGenerateMockTest()
 
   const [exams, setExams] = useState<string[]>([])
   const [exam, setExam] = useState('')
   const [subjectId, setSubjectId] = useState('')
   const [questionCount, setQuestionCount] = useState(20)
+  const [timeLimit, setTimeLimit] = useState(30)
+  const [testFormat, setTestFormat] = useState<'cbt' | 'scrollable'>('cbt')
   const [mode, setMode] = useState<'custom' | 'weak_area'>('custom')
   const [error, setError] = useState<string | null>(null)
+
+  const { data: availableQuestions = [], isLoading: isLoadingQuestions } = useAvailableQuestions(exam, subjectId)
 
   // Fetch live exams
   useEffect(() => {
@@ -50,8 +54,27 @@ export default function MockTestsPage() {
   const handleGenerate = async () => {
     if (!subjectId) { setError('Please select a subject.'); return }
     setError(null)
+    
+    let selectedIds: string[] | undefined = undefined
+    if (mode === 'custom' && availableQuestions.length > 0) {
+      const shuffled = [...availableQuestions].sort(() => 0.5 - Math.random())
+      selectedIds = shuffled.slice(0, questionCount)
+      if (selectedIds.length === 0) {
+        setError('No questions available for this selection.')
+        return
+      }
+    }
+
     try {
-      const result = await generateMutation.mutateAsync({ exam, subject_id: subjectId, question_count: questionCount, mode })
+      const result = await generateMutation.mutateAsync({ 
+        exam, 
+        subject_id: subjectId, 
+        question_count: selectedIds ? selectedIds.length : questionCount, 
+        question_ids: selectedIds,
+        mode, 
+        test_format: testFormat, 
+        time_limit: timeLimit 
+      })
       router.push(`/mock-tests/${result.id}`)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to generate mock test'
@@ -115,7 +138,19 @@ export default function MockTestsPage() {
 
         {/* Subject selector */}
         <div className="space-y-2">
-          <label className="text-sm font-semibold">Subject</label>
+          <label className="text-sm font-semibold flex items-center justify-between">
+            Subject
+            {subjectId && !isLoadingQuestions && (
+              <span className="text-xs font-normal text-secondary-foreground bg-secondary px-2 py-0.5 rounded-md">
+                {availableQuestions.length} questions available
+              </span>
+            )}
+            {isLoadingQuestions && (
+              <span className="text-xs font-normal text-muted-foreground animate-pulse">
+                loading...
+              </span>
+            )}
+          </label>
           <select
             value={subjectId}
             onChange={e => setSubjectId(e.target.value)}
@@ -145,6 +180,53 @@ export default function MockTestsPage() {
                 {count}
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* Time limit selector */}
+        <div className="space-y-2">
+          <label className="text-sm font-semibold">Time Limit (Minutes)</label>
+          <div className="grid grid-cols-4 gap-3">
+            {[15, 30, 60, 120].map(time => (
+              <button
+                key={time}
+                onClick={() => setTimeLimit(time)}
+                className={`rounded-xl py-3 text-sm font-bold border-2 transition-all ${
+                  timeLimit === time 
+                    ? 'border-primary bg-primary text-primary-foreground shadow-md shadow-primary/20' 
+                    : 'border-border bg-card hover:border-primary/40 text-foreground'
+                }`}
+              >
+                {time}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Format selector */}
+        <div className="space-y-2">
+          <label className="text-sm font-semibold">Test Format</label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setTestFormat('cbt')}
+              className={`flex flex-col items-start gap-1.5 rounded-xl border-2 p-4 text-left transition-all ${
+                testFormat === 'cbt' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'
+              }`}
+            >
+              <Target className={`h-5 w-5 ${testFormat === 'cbt' ? 'text-primary' : 'text-muted-foreground'}`} />
+              <span className="text-sm font-semibold">CBT Mode</span>
+              <span className="text-xs text-muted-foreground">Standard one-question-per-page interface.</span>
+            </button>
+            <button
+              onClick={() => setTestFormat('scrollable')}
+              className={`flex flex-col items-start gap-1.5 rounded-xl border-2 p-4 text-left transition-all ${
+                testFormat === 'scrollable' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'
+              }`}
+            >
+              <BookOpen className={`h-5 w-5 ${testFormat === 'scrollable' ? 'text-primary' : 'text-muted-foreground'}`} />
+              <span className="text-sm font-semibold">Full Paper Mode</span>
+              <span className="text-xs text-muted-foreground">View all questions on a single scrollable page.</span>
+            </button>
           </div>
         </div>
 

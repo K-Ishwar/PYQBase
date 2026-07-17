@@ -23,21 +23,7 @@ export function DailyRevisionCard() {
   }
 
   if (totalDue === 0) {
-    return (
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/10 p-6 shadow-sm flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-            <Brain className="h-6 w-6" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-emerald-900 dark:text-emerald-100">Daily Revision Complete</h2>
-            <p className="text-sm text-emerald-700/80 dark:text-emerald-300/80 mt-1">
-              You&apos;re all caught up for today! Come back tomorrow.
-            </p>
-          </div>
-        </div>
-      </div>
-    )
+    return null
   }
 
   return (

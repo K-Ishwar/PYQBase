@@ -94,7 +94,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } else {
       // User is logged out
-      if (pathname.startsWith('/mock-tests')) {
+      const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/onboarding') || pathname.startsWith('/admin')
+      const isPublicInterface = 
+        pathname === '/' || 
+        pathname === '/exams' || 
+        pathname === '/subjects' || 
+        pathname === '/years' || 
+        pathname === '/search' ||
+        pathname === '/favicon.ico'
+
+      if (!isAuthRoute && !isPublicInterface) {
         router.push('/login')
       }
     }

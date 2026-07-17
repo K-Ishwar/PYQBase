@@ -1,157 +1,210 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowRight, BookOpen, Clock, Target, ShieldCheck, Landmark, Briefcase, Compass } from "lucide-react"
-import { SpotlightCard } from "@/components/ui/SpotlightCard"
+import { Target, Landmark, ShieldCheck, Briefcase, Compass, BookOpen, CheckCircle, Clock } from "lucide-react"
 import { MagneticButton } from "@/components/ui/MagneticButton"
-import { ExamQuestionList } from "./ExamQuestionList"
 
-const EXAM_DATA = {
+const EXAM_INFO = {
   "upsc-cse": {
     name: "UPSC Civil Services",
     id: "UPSC CSE",
-    description: "The most prestigious civil service examination in India.",
-    stats: "15,200+ PYQs",
+    description: "The Civil Services Examination (CSE) is a nationwide competitive examination in India conducted by the Union Public Service Commission for recruitment to higher Civil Services of the Government of India, including the Indian Administrative Service, Indian Foreign Service, and Indian Police Service.",
     icon: <Landmark className="w-12 h-12 text-primary" />,
-    years: [2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013],
-    subjects: ["Polity", "History", "Geography", "Economy", "Mathematics", "Reasoning"]
+    overview: {
+      frequency: "Once a year",
+      mode: "Offline (Pen & Paper)",
+      stages: "3 Stages (Prelims, Mains, Interview)"
+    },
+    pattern: [
+      { stage: "Phase I: Preliminary Exam", details: "Two objective-type papers (General Studies I and CSAT), 200 marks each. CSAT is qualifying (33%)." },
+      { stage: "Phase II: Main Exam", details: "Nine descriptive papers. Two qualifying language papers, one Essay paper, four General Studies papers, and two Optional papers." },
+      { stage: "Phase III: Interview", details: "Personality Test carrying 275 marks." }
+    ],
+    eligibility: [
+      "Nationality: Must be a citizen of India for IAS, IPS, and IFS.",
+      "Education: Must hold a bachelor's degree from a recognized university or possess an equivalent qualification.",
+      "Age Limit: Minimum 21 years and maximum 32 years (General). Relaxable up to 35 years for OBC and 37 years for SC/ST.",
+      "Number of Attempts: 6 attempts for General, 9 for OBC, and unlimited for SC/ST candidates up to the age limit.",
+      "Physical Standards: Candidates must be physically fit according to physical standards for admission to Civil Services Examination."
+    ]
   },
   "upsc-capf": {
-    name: "UPSC CAPF",
+    name: "UPSC CAPF (AC)",
     id: "UPSC CAPF",
-    description: "Central Armed Police Forces Assistant Commandant Examination.",
-    stats: "5,400+ PYQs",
+    description: "The Central Armed Police Forces (Assistant Commandants) Examination is conducted by UPSC for recruitment of Assistant Commandants in the Border Security Force (BSF), Central Reserve Police Force (CRPF), Central Industrial Security Force (CISF), Indo-Tibetan Border Police (ITBP), and Sashastra Seema Bal (SSB).",
     icon: <ShieldCheck className="w-12 h-12 text-green-500" />,
-    years: [2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016],
-    subjects: ["General Ability", "Reasoning", "Mathematics", "English"]
+    overview: {
+      frequency: "Once a year",
+      mode: "Offline (Pen & Paper)",
+      stages: "3 Stages (Written, Physical, Interview)"
+    },
+    pattern: [
+      { stage: "Paper I: General Ability & Intelligence", details: "Objective (MCQ) format, 250 marks. Covers General Mental Ability, General Science, Current Events, Indian Polity and Economy, History of India, and Indian and World Geography." },
+      { stage: "Paper II: General Studies, Essay & Comprehension", details: "Descriptive format, 200 marks. Candidates have the option of writing the Essay Component in English or Hindi, but the medium of Precis Writing, Comprehension Components and other communications/ language skills will be English only." },
+      { stage: "Physical & Medical Test", details: "Includes 100m race, 800m race, Long Jump, and Shot Put. Qualifying in nature." },
+      { stage: "Interview/Personality Test", details: "Carries 150 marks. Conducted by the UPSC board." }
+    ],
+    eligibility: [
+      "Nationality: Must be a citizen of India.",
+      "Gender: Both Male and Female candidates are eligible for appointment to the post of Assistant Commandants.",
+      "Education: Must hold a bachelor's degree from a recognized university.",
+      "Age Limit: Minimum 20 years and maximum 25 years. Relaxations: up to 5 years for SC/ST, and up to 3 years for OBC.",
+      "Physical Standards: Must meet stringent physical and medical standards prescribed in the official notification (e.g., minimum height: Men 165cm, Women 157cm)."
+    ]
   },
   "mpsc-rajyseva": {
-    name: "MPSC Rajyseva",
+    name: "MPSC Rajyaseva",
     id: "MPSC Rajyseva",
-    description: "Maharashtra State Services Examination.",
-    stats: "8,100+ PYQs",
+    description: "The Maharashtra Public Service Commission (MPSC) State Services Examination is conducted for recruitment to various Group A and Group B posts in the Maharashtra State Government administration, such as Deputy Collector, DSP, and Tehsildar.",
     icon: <Briefcase className="w-12 h-12 text-orange-500" />,
-    years: [2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017],
-    subjects: ["History of Maharashtra", "Geography of Maharashtra", "Polity", "Economy"]
+    overview: {
+      frequency: "Once a year",
+      mode: "Offline (Pen & Paper)",
+      stages: "3 Stages (Prelims, Mains, Interview)"
+    },
+    pattern: [
+      { stage: "Preliminary Exam", details: "Two objective-type papers (GS and CSAT) of 200 marks each. CSAT is qualifying (33%)." },
+      { stage: "Main Exam", details: "Descriptive format (recently updated to mirror UPSC pattern). Consists of 9 papers including language papers, Essay, four General Studies papers, and two Optional papers. Total 1750 marks." },
+      { stage: "Interview", details: "Personality Test carrying 275 marks." }
+    ],
+    eligibility: [
+      "Nationality & Domicile: Must be an Indian Citizen. While non-domiciles can apply, preference and reservations are strictly for Maharashtra domiciles.",
+      "Language: Knowledge of Marathi is mandatory (must read, write, and speak).",
+      "Education: Must have a bachelor's degree from a recognized university. Final year students can apply for Prelims.",
+      "Age Limit: Minimum 19 years and maximum 38 years (Open category). Relaxable up to 43 years for reserved categories.",
+      "Attempts: 6 attempts for Open category, 9 for OBC/remaining backward classes, and unlimited for SC/ST."
+    ]
   },
   "upsc-cds": {
     name: "UPSC CDS",
     id: "UPSC CDS",
-    description: "Combined Defence Services Examination.",
-    stats: "6,800+ PYQs",
+    description: "The Combined Defence Services (CDS) Examination is conducted by UPSC twice a year for recruitment into the Indian Military Academy (IMA), Officers Training Academy (OTA), Indian Naval Academy (INA), and Indian Air Force Academy (AFA).",
     icon: <Compass className="w-12 h-12 text-red-500" />,
-    years: [2024, 2023, 2022, 2021, 2020, 2019, 2018],
-    subjects: ["English", "General Knowledge", "Mathematics"]
+    overview: {
+      frequency: "Twice a year",
+      mode: "Offline (Pen & Paper)",
+      stages: "2 Stages (Written, SSB Interview)"
+    },
+    pattern: [
+      { stage: "Written Exam (IMA, INA, AFA)", details: "Three objective papers: English, General Knowledge, and Elementary Mathematics (100 marks each, 2 hours each)." },
+      { stage: "Written Exam (OTA)", details: "Two objective papers: English and General Knowledge (100 marks each, 2 hours each)." },
+      { stage: "SSB Interview", details: "Intelligence and Personality Test, spanning 5 days. Includes Psychological Tests, Group Testing Officer Tasks (GTO), and Personal Interview." },
+      { stage: "Medical Examination", details: "Rigorous medical check-up post-SSB recommendation." }
+    ],
+    eligibility: [
+      "Nationality: Must be an unmarried Indian citizen.",
+      "Education (IMA/OTA): Degree of a recognized University or equivalent.",
+      "Education (INA): Degree in Engineering from a recognized University/Institution.",
+      "Education (AFA): Degree of a recognized University (with Physics and Mathematics at 10+2 level) or Bachelor of Engineering.",
+      "Age Limit: Varies by academy. Generally 19 to 24 years (IMA), 19 to 24 years (INA), 20 to 24 years (AFA), and 19 to 25 years (OTA).",
+      "Marital Status: Candidates must be unmarried (except for certain OTA categories)."
+    ]
   }
 }
 
-export default async function ExamDashboardPage({ params }: { params: { examId: string } }) {
-  const exam = EXAM_DATA[params.examId as keyof typeof EXAM_DATA]
+export default function ExamInfoPage({ params }: { params: { examId: string } }) {
+  const exam = EXAM_INFO[params.examId as keyof typeof EXAM_INFO]
 
   if (!exam) {
     notFound()
   }
 
-  // Fetch live stats from backend
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
-  let liveStats = { total_questions: 0, available_years: [] as number[] }
-  let liveSubjects: string[] = []
-  
-  try {
-    const res = await fetch(`${apiUrl}/api/v1/analytics/exams/${encodeURIComponent(exam.id)}`, {
-      next: { revalidate: 60 } // Cache for 60 seconds
-    })
-    if (res.ok) {
-      liveStats = await res.json()
-    }
-
-    const subRes = await fetch(`${apiUrl}/api/v1/analytics/exams/${encodeURIComponent(exam.id)}/subjects`, {
-      next: { revalidate: 60 }
-    })
-    if (subRes.ok) {
-      liveSubjects = await subRes.json()
-    }
-  } catch (error) {
-    console.error("Failed to fetch exam stats:", error)
-  }
-
-  // Fallback to empty array if no live years exist yet
-  const displayYears = liveStats.available_years.length > 0 ? liveStats.available_years : []
-
   return (
-    <div className="container py-10 max-w-6xl mx-auto space-y-20">
+    <div className="container py-10 max-w-5xl mx-auto space-y-16">
       {/* Hero Section */}
-      <section className="relative rounded-3xl overflow-hidden glass p-10 md:p-16 flex flex-col md:flex-row items-center gap-10">
-        <div className="absolute inset-0 mesh-bg opacity-30 z-0"></div>
-        <div className="z-10 bg-card/80 p-6 rounded-2xl shadow-lg border border-black/5 dark:border-white/5 backdrop-blur-md">
+      <section className="relative rounded-3xl overflow-hidden glass p-10 md:p-16 flex flex-col md:flex-row items-center gap-10 border border-primary/10">
+        <div className="absolute inset-0 mesh-bg opacity-20 z-0"></div>
+        <div className="z-10 bg-card/80 p-8 rounded-3xl shadow-xl border border-black/5 dark:border-white/5 backdrop-blur-md">
           {exam.icon}
         </div>
         <div className="z-10 flex-1 text-center md:text-left">
-          <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-medium text-primary mb-6">
-            <span className="flex h-2 w-2 rounded-full bg-primary mr-2 animate-pulse"></span>
-            {liveStats.total_questions.toLocaleString()} PYQs Available
-          </div>
-          <h1 className="text-5xl font-extrabold tracking-tight mb-4">{exam.name}</h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl">{exam.description}</p>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">{exam.name}</h1>
+          <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl leading-relaxed">
+            {exam.description}
+          </p>
           
           <div className="flex flex-wrap gap-4 justify-center md:justify-start">
             <MagneticButton className="rounded-xl shadow-md shadow-primary/20 hover:shadow-lg transition-shadow bg-primary">
-              <Link href={`/search?exam=${exam.id}`} className="px-6 py-3 flex items-center gap-2 text-sm font-bold text-primary-foreground hover:bg-primary-dark transition-colors rounded-xl">
-                <Target className="w-4 h-4" />
-                Search All PYQs
-              </Link>
-            </MagneticButton>
-            <MagneticButton className="rounded-xl shadow-md shadow-secondary/20 hover:shadow-lg transition-shadow bg-secondary">
-              <Link href={`/mock-tests`} className="px-6 py-3 flex items-center gap-2 text-sm font-bold text-secondary-foreground hover:bg-secondary/90 transition-colors rounded-xl">
-                <Clock className="w-4 h-4" />
-                Take Mock Test
+              <Link href={`/exams/${params.examId}/practice`} className="px-8 py-4 flex items-center gap-3 text-base font-bold text-primary-foreground hover:bg-primary-dark transition-colors rounded-xl">
+                <Target className="w-5 h-5" />
+                Start Practicing PYQs
               </Link>
             </MagneticButton>
           </div>
         </div>
       </section>
 
-      {/* Questions List */}
-      <section className="space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight mb-2">Exam Questions</h2>
-            <p className="text-muted-foreground">Browse all previous year questions for this exam.</p>
-          </div>
-        </div>
-        
-        <ExamQuestionList examId={exam.id} years={displayYears} />
-      </section>
-
-      {/* Browse by Subject */}
-      <section className="space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight mb-2">Key Subjects</h2>
-            <p className="text-muted-foreground">Focus your preparation on high-yield topics.</p>
-          </div>
-        </div>
-        
-        
-        {liveSubjects.length === 0 ? (
-          <div className="text-muted-foreground p-4 bg-card rounded-xl border">No subjects available for this exam yet.</div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {liveSubjects.map((subject) => (
-              <Link
-                key={subject}
-                href={`/subjects/${subject.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-')}`}
-                className="group flex items-center p-5 rounded-2xl border bg-card hover:border-primary/50 transition-all shadow-sm group-hover:shadow-md"
-              >
-                <div className="bg-primary/10 text-primary p-3 rounded-xl mr-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                  <BookOpen className="w-5 h-5" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="md:col-span-2 space-y-12">
+          {/* Exam Pattern */}
+          <section className="space-y-6">
+            <div className="flex items-center gap-3 border-b pb-4">
+              <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                <BookOpen className="w-6 h-6" />
+              </div>
+              <h2 className="text-3xl font-bold tracking-tight">Exam Pattern</h2>
+            </div>
+            <div className="space-y-4">
+              {exam.pattern.map((p, idx) => (
+                <div key={idx} className="bg-card border rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                  <h3 className="text-xl font-bold mb-2 text-primary">{p.stage}</h3>
+                  <p className="text-muted-foreground">{p.details}</p>
                 </div>
-                <div className="flex-1 font-bold">{subject}</div>
-                <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transform group-hover:translate-x-1 transition-all" />
-              </Link>
-            ))}
+              ))}
+            </div>
+          </section>
+
+          {/* Eligibility */}
+          <section className="space-y-6">
+            <div className="flex items-center gap-3 border-b pb-4">
+              <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                <CheckCircle className="w-6 h-6" />
+              </div>
+              <h2 className="text-3xl font-bold tracking-tight">Eligibility Criteria</h2>
+            </div>
+            <div className="bg-card border rounded-2xl p-8 shadow-sm">
+              <ul className="space-y-4">
+                {exam.eligibility.map((item, idx) => (
+                  <li key={idx} className="flex items-start gap-3">
+                    <div className="mt-1 flex-shrink-0 w-2 h-2 rounded-full bg-primary" />
+                    <span className="text-muted-foreground leading-relaxed">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-8">
+          <section className="bg-secondary/30 rounded-3xl p-8 border border-secondary">
+            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-primary" />
+              Quick Overview
+            </h3>
+            <div className="space-y-6">
+              <div>
+                <p className="text-sm text-muted-foreground font-medium mb-1">Frequency</p>
+                <p className="font-bold">{exam.overview.frequency}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground font-medium mb-1">Mode of Exam</p>
+                <p className="font-bold">{exam.overview.mode}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground font-medium mb-1">Stages</p>
+                <p className="font-bold">{exam.overview.stages}</p>
+              </div>
+            </div>
+          </section>
+          
+          <div className="bg-primary/5 rounded-3xl p-8 border border-primary/10 text-center">
+            <h3 className="font-bold text-lg mb-4">Ready to test your knowledge?</h3>
+            <Link href={`/exams/${params.examId}/practice`} className="inline-flex w-full justify-center px-6 py-3 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-colors shadow-sm">
+              Access PYQ Bank
+            </Link>
           </div>
-        )}
-      </section>
+        </div>
+      </div>
     </div>
   )
 }

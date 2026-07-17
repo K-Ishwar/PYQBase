@@ -6,15 +6,35 @@ export interface MockTestResponse {
   exam: string
   question_ids: string[]
   mode: string
+  test_format: string
+  time_limit: number
   score?: number
   created_at: string
+  user_answers?: Record<string, string>
+  questions?: any[]
 }
 
 export interface MockTestGenerateRequest {
   exam: string
   subject_id: string
   question_count: number
+  question_ids?: string[]
   mode: string // "custom" | "weak_area"
+  test_format: string
+  time_limit: number
+}
+
+export function useAvailableQuestions(exam: string, subjectId: string) {
+  return useQuery<string[]>({
+    queryKey: ['available-questions', exam, subjectId],
+    queryFn: async () => {
+      if (!exam || !subjectId) return []
+      const res = await apiClient(`/api/v1/mock-tests/available-questions?exam=${encodeURIComponent(exam)}&subject_id=${subjectId}`)
+      if (!res.ok) throw new Error('Failed to fetch available questions')
+      return res.json()
+    },
+    enabled: !!(exam && subjectId)
+  })
 }
 
 export function useGenerateMockTest() {
@@ -64,5 +84,31 @@ export function useMockTest(id: string) {
       return res.json() as Promise<MockTestResponse>
     },
     enabled: !!id,
+  })
+}
+
+export interface MockTestSubmitRequest {
+  answers: Record<string, string>
+  time_taken_seconds: number
+}
+
+export function useSubmitMockTest(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: MockTestSubmitRequest) => {
+      const res = await apiClient(`/api/v1/mock-tests/${id}/submit`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData?.detail || 'Failed to submit mock test')
+      }
+      return res.json() as Promise<MockTestResponse>
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mock-tests', id] })
+      queryClient.invalidateQueries({ queryKey: ['mock-tests', 'history'] })
+    },
   })
 }

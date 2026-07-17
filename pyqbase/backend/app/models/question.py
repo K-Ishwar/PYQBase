@@ -26,7 +26,7 @@ class QuestionDb(SQLModel, table=True):
     image_description: Optional[str] = Field(default=None, sa_column=Column(Text))
     explanation: Optional[dict] = Field(default=None, sa_column=Column(JSONB))
     parse_confidence: Optional[float] = None
-    topic_id: UUID = Field(foreign_key="topics.id")
+    topic_id: UUID = Field(foreign_key="topics.id", index=True)
     syllabus_point_id: Optional[int] = None
     elo_rating: int = Field(default=1200)
     # search_vector is managed by a DB trigger — excluded from writes

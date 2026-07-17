@@ -1,32 +1,27 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api-client'
 
-interface AdminQuestion {
+interface QuestionLogue {
   id: string
   exam: string
   year: number
-  paper: string
-  question_number: number
-  topic_id: string
-  correct_option: string
+  statement: string
+  subject_id: string | null
+  subject_name: string | null
 }
 
 export default function AdminQuestionsPage() {
   const queryClient = useQueryClient()
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [page, setPage] = useState(1)
-  const [showDuplicates, setShowDuplicates] = useState(false)
-  const limit = 20
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
 
-  const { data: questions = [], isLoading, error } = useQuery<AdminQuestion[]>({
-    queryKey: ['admin-questions', page, showDuplicates],
+  const { data: questions = [], isLoading, error } = useQuery<QuestionLogue[]>({
+    queryKey: ['admin-questions-logue'],
     queryFn: async () => {
-      const url = `/api/v1/admin/questions?limit=${limit}&offset=${(page - 1) * limit}${showDuplicates ? '&show_duplicates=true' : ''}`
-      const res = await apiClient(url)
+      const res = await apiClient('/api/v1/admin/questions/logue')
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
         throw new Error(errData.detail || 'Failed to load questions')
@@ -35,54 +30,53 @@ export default function AdminQuestionsPage() {
     }
   })
 
-  const deleteMutation = useMutation({
-    mutationFn: async (ids: string[]) => {
-      const res = await apiClient('/api/v1/admin/questions/bulk', {
+  // Group by Exam + Subject
+  const groupedQuestions = useMemo(() => {
+    const groups: Record<string, { exam: string, subject_name: string, questions: QuestionLogue[] }> = {}
+    questions.forEach(q => {
+      const exam = q.exam
+      const subject = q.subject_name || 'Unknown'
+      const key = `${exam}::${subject}`
+      if (!groups[key]) {
+        groups[key] = { exam, subject_name: subject, questions: [] }
+      }
+      groups[key].questions.push(q)
+    })
+    // Sort groups
+    return Object.values(groups).sort((a, b) => {
+      if (a.exam !== b.exam) return a.exam.localeCompare(b.exam)
+      return a.subject_name.localeCompare(b.subject_name)
+    })
+  }, [questions])
+
+  const deleteGroupMutation = useMutation({
+    mutationFn: async ({ exam, subject_name }: { exam: string, subject_name: string }) => {
+      const res = await apiClient('/api/v1/admin/questions/group', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question_ids: ids }),
+        body: JSON.stringify({ exam, subject_name }),
       })
-      if (!res.ok) throw new Error('Failed to delete questions')
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.detail || 'Failed to delete group')
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-questions'] })
+      queryClient.invalidateQueries({ queryKey: ['admin-questions-logue'] })
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] })
-      setSelectedIds(new Set())
     },
   })
 
-  const { data: stats } = useQuery({
-    queryKey: ['admin-stats'],
-    queryFn: async () => {
-      const res = await apiClient('/api/v1/admin/stats')
-      if (!res.ok) throw new Error('Failed to load stats')
-      return res.json()
-    }
-  })
-
-  const totalPages = stats ? Math.max(1, Math.ceil(stats.total_questions / limit)) : 1
-
-  const toggleSelectAll = () => {
-    if (selectedIds.size === questions.length && questions.length > 0) {
-      setSelectedIds(new Set())
-    } else {
-      setSelectedIds(new Set(questions.map((q) => q.id)))
-    }
+  const toggleGroup = (key: string) => {
+    const next = new Set(expandedGroups)
+    if (next.has(key)) next.delete(key)
+    else next.add(key)
+    setExpandedGroups(next)
   }
 
-  const toggleSelect = (id: string) => {
-    const next = new Set(selectedIds)
-    if (next.has(id)) {
-      next.delete(id)
-    } else {
-      next.add(id)
-    }
-    setSelectedIds(next)
-  }
-
-  const handleDelete = () => {
-    if (confirm(`Are you sure you want to delete ${selectedIds.size} questions?`)) {
-      deleteMutation.mutate(Array.from(selectedIds))
+  const handleDeleteGroup = (exam: string, subject: string, count: number) => {
+    if (confirm(`Are you sure you want to permanently delete ALL ${count} questions for ${exam} - ${subject}?`)) {
+      deleteGroupMutation.mutate({ exam, subject_name: subject })
     }
   }
 
@@ -90,32 +84,10 @@ export default function AdminQuestionsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Questions</h1>
-          <p className="mt-1 text-muted-foreground">Manage all PYQ content.</p>
+          <h1 className="text-3xl font-extrabold tracking-tight">Question Logue</h1>
+          <p className="mt-1 text-muted-foreground">Manage uploaded question blocks grouped by Exam and Subject.</p>
         </div>
         <div className="flex gap-3">
-          {selectedIds.size > 0 && (
-            <button
-              onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-              className="rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground hover:bg-destructive/90 transition-colors disabled:opacity-50"
-            >
-              {deleteMutation.isPending ? 'Deleting...' : `Delete Selected (${selectedIds.size})`}
-            </button>
-          )}
-          <button
-            onClick={() => {
-              setShowDuplicates(!showDuplicates)
-              setPage(1)
-            }}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-              showDuplicates 
-                ? "bg-amber-100 text-amber-800 hover:bg-amber-200" 
-                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-            }`}
-          >
-            {showDuplicates ? "Viewing Duplicates" : "Show Duplicate Questions"}
-          </button>
           <Link
             href="/admin/questions/new"
             className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-dark transition-colors"
@@ -125,114 +97,65 @@ export default function AdminQuestionsPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl border bg-card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="border-b bg-muted/50">
-            <tr>
-              <th className="px-4 py-3 text-left w-10">
-                <input
-                  type="checkbox"
-                  className="rounded border-gray-300 text-primary focus:ring-primary"
-                  checked={questions.length > 0 && selectedIds.size === questions.length}
-                  onChange={toggleSelectAll}
-                />
-              </th>
-              <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Exam</th>
-              <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Year</th>
-              <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Paper</th>
-              <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Q#</th>
-              <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Topic</th>
-              <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Answer</th>
-              <th className="px-4 py-3 text-left font-semibold text-muted-foreground">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {isLoading ? (
-              <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-sm text-muted-foreground animate-pulse">
-                  Loading questions...
-                </td>
-              </tr>
-            ) : error ? (
-              <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-sm text-destructive">
-                  Error loading questions: {error.message}
-                </td>
-              </tr>
-            ) : questions.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                  No questions found in the database.
-                </td>
-              </tr>
-            ) : (
-              questions.map((q) => (
-                <tr key={q.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 text-primary focus:ring-primary"
-                      checked={selectedIds.has(q.id)}
-                      onChange={() => toggleSelect(q.id)}
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                      {q.exam.replace('_', ' ')}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs">{q.year}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{q.paper}</td>
-                  <td className="px-4 py-3 font-mono text-xs">#{q.question_number}</td>
-                  <td className="px-4 py-3 text-xs">{q.topic_id || 'N/A'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                      q.correct_option === 'DROPPED'
-                        ? 'bg-destructive/10 text-destructive'
-                        : 'bg-success/10 text-success'
-                    }`}>
-                      {q.correct_option}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/admin/questions/${q.id}`}
-                      className="text-primary text-xs font-medium hover:underline"
-                    >
-                      Edit
-                    </Link>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      <div className="rounded-xl border bg-card p-6">
+        {isLoading ? (
+          <div className="text-center py-10 animate-pulse text-muted-foreground">Loading Question Logue...</div>
+        ) : error ? (
+          <div className="text-center py-10 text-destructive">Error: {error.message}</div>
+        ) : groupedQuestions.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground">No questions found.</div>
+        ) : (
+          <div className="space-y-4">
+            {groupedQuestions.map(group => {
+              const key = `${group.exam}::${group.subject_name}`
+              const isExpanded = expandedGroups.has(key)
+              return (
+                <div key={key} className="border rounded-lg overflow-hidden">
+                  <div 
+                    className="bg-muted/50 p-4 flex justify-between items-center cursor-pointer hover:bg-muted" 
+                    onClick={() => toggleGroup(key)}
+                  >
+                    <div>
+                      <h3 className="font-bold text-lg">{group.exam} - {group.subject_name}</h3>
+                      <p className="text-sm text-muted-foreground">{group.questions.length} questions</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <button 
+                        onClick={(e) => { 
+                          e.stopPropagation()
+                          handleDeleteGroup(group.exam, group.subject_name, group.questions.length) 
+                        }}
+                        disabled={deleteGroupMutation.isPending}
+                        className="px-3 py-1.5 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-md text-sm font-semibold transition-colors disabled:opacity-50"
+                      >
+                        Delete Group
+                      </button>
+                      <span className="text-muted-foreground">
+                        {isExpanded ? '▼' : '▶'}
+                      </span>
+                    </div>
+                  </div>
+                  {isExpanded && (
+                    <div className="p-4 border-t bg-background max-h-[500px] overflow-y-auto space-y-2">
+                      {group.questions.map(q => (
+                        <div key={q.id} className="p-3 border rounded-md hover:border-primary/50 transition-colors flex justify-between items-start gap-4">
+                          <div>
+                            <span className="inline-block px-2 py-0.5 bg-primary/10 text-primary text-xs font-bold rounded mr-2">{q.year}</span>
+                            <span className="text-sm">{q.statement}</span>
+                          </div>
+                          <Link href={`/admin/questions/${q.id}`} className="text-primary text-xs font-semibold whitespace-nowrap hover:underline">
+                            Edit
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4 bg-card p-4 rounded-xl border">
-          <div className="text-sm text-muted-foreground">
-            Page {page} of {totalPages} (Total: {stats?.total_questions || 0})
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-4 py-2 rounded-lg border bg-background text-sm font-medium hover:bg-muted disabled:opacity-50 transition-colors"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="px-4 py-2 rounded-lg border bg-background text-sm font-medium hover:bg-muted disabled:opacity-50 transition-colors"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

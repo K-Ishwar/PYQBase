@@ -1,3 +1,4 @@
+// Force SWC recompile
 'use client'
 
 import { useForm, Controller } from 'react-hook-form'
@@ -51,8 +52,8 @@ interface QuestionEditorFormProps {
 
 export function QuestionEditorForm({ questionId, defaultValues }: QuestionEditorFormProps) {
   const isNew = !questionId || questionId === 'new'
-  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'done' | 'error'>('idle')
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [uploadStatus, setUploadStatus] = useState<string>('idle')
+  const [submitStatus, setSubmitStatus] = useState<string>('idle')
   const [submitError, setSubmitError] = useState<string>('')
 
   const {
@@ -160,8 +161,8 @@ export function QuestionEditorForm({ questionId, defaultValues }: QuestionEditor
   const fieldClass = 'w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all'
   const labelClass = 'block text-sm font-medium mb-1'
   const errorClass = 'mt-1 text-xs text-destructive'
-
-  return <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl">
+  return (
+    <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-8 max-w-4xl">
       {submitStatus === 'success' && (
         <div className="rounded-lg border border-success/30 bg-success-bg p-4 text-sm text-success font-medium">
           ✓ Question saved successfully!
@@ -368,4 +369,5 @@ export function QuestionEditorForm({ questionId, defaultValues }: QuestionEditor
         </a>
       </div>
     </form>
+  )
 }

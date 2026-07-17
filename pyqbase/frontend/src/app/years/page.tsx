@@ -48,7 +48,7 @@ export default async function YearsPage() {
           <div key={exam.id} className="bg-card border rounded-2xl p-8 shadow-sm">
             <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
               {exam.name}
-              <span className="text-sm font-medium text-muted-foreground bg-secondary px-3 py-1 rounded-full">
+              <span className="text-sm font-medium text-secondary-foreground bg-secondary px-3 py-1 rounded-full">
                 {exam.years.length} Years Available
               </span>
             </h3>

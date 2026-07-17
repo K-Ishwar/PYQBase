@@ -80,19 +80,12 @@ async def get_subject_heatmap(
 
 
 @router.get("/exams", response_model=List[str])
-async def get_all_exams(
-    db: AsyncSession = Depends(get_db)
-):
+async def get_all_exams():
     """
-    Returns a list of all distinct exams currently in the database.
+    Returns a list of all distinct exams.
+    Hardcoded for performance to prevent full table scans on the questions table.
     """
-    from app.models.question import QuestionDb
-    from sqlalchemy import select
-    
-    stmt = select(QuestionDb.exam).distinct().where(QuestionDb.exam.isnot(None))
-    result = await db.execute(stmt)
-    exams = result.scalars().all()
-    return list(exams)
+    return ["UPSC CSE", "UPSC CAPF", "MPSC Rajyseva", "UPSC CDS"]
 
 
 @router.get("/exams/{exam_name}", response_model=ExamStatsResponse)

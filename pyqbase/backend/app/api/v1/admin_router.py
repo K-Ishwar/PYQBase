@@ -89,41 +89,69 @@ async def get_exam_subject_year_report(
 async def list_questions(
     limit: int = 100,
     offset: int = 0,
-    show_duplicates: bool = False,
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_admin_user),
 ):
-    """List all questions (admin only). If show_duplicates is true, returns questions that are >90% similar to another question."""
-    if show_duplicates:
-        # Ensure pg_trgm extension is active (requires superuser, but usually allowed in local/cloud SQL if trusted)
-        try:
-            await db.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm;"))
-            await db.commit()
-        except Exception:
-            pass # might fail if already exists or permission denied, but if it exists we're good
-            
-        # We find questions that have at least one other question with >90% similarity.
-        # extracting 'en' from JSONB for comparison
-        stmt_global = text("""
-            SELECT DISTINCT ON (q1.id) q1.*
-            FROM questions q1
-            JOIN questions q2 ON q1.id != q2.id
-                 AND q1.exam = q2.exam
-                 AND q1.year = q2.year
-            WHERE similarity(q1.question_stem->>'en', q2.question_stem->>'en') > 0.90
-            ORDER BY q1.id
-            LIMIT :limit OFFSET :offset
+    """List all questions (admin only)."""
+    questions = await question_repo.list_questions(db, limit=limit, offset=offset)
+    return questions
+
+
+@router.get("/questions/logue")
+async def list_questions_logue(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    """Returns a lightweight list of questions joined with subject and exam for logue grouping."""
+    stmt = text("""
+        SELECT q.id, q.exam, q.year, q.question_stem->>'en' as statement, s.id as subject_id, s.name as subject_name
+        FROM questions q
+        LEFT JOIN topics t ON q.topic_id = t.id
+        LEFT JOIN subjects s ON t.subject_id = s.id
+        ORDER BY q.exam, s.name, q.year DESC
+    """)
+    result = await db.execute(stmt)
+    return [dict(r) for r in result.mappings()]
+
+
+class DeleteGroupPayload(BaseModel):
+    exam: str
+    subject_name: str
+
+@router.delete("/questions/group", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_question_group(
+    payload: DeleteGroupPayload,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    """Deletes all questions that belong to a specific exam and subject_name."""
+    # Since topic_id points to topics which point to subjects, we join to delete.
+    # PostgreSQL doesn't support JOIN in DELETE directly without USING.
+    # We can delete questions where id IN (subquery)
+    
+    if payload.subject_name == "Unknown":
+        # Handle cases where subject might be missing
+        stmt = text("""
+            DELETE FROM questions
+            WHERE exam = :exam AND (topic_id IS NULL OR topic_id NOT IN (SELECT id FROM topics))
         """)
-        try:
-            result = await db.execute(stmt_global, {"limit": limit, "offset": offset})
-            rows = result.mappings().all()
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-        # Map to expected response
-        return [dict(r) for r in rows]
     else:
-        questions = await question_repo.list_questions(db, limit=limit, offset=offset)
-        return questions
+        stmt = text("""
+            DELETE FROM questions
+            WHERE id IN (
+                SELECT q.id
+                FROM questions q
+                JOIN topics t ON q.topic_id = t.id
+                JOIN subjects s ON t.subject_id = s.id
+                WHERE q.exam = :exam AND s.name = :subject_name
+            )
+        """)
+        
+    await db.execute(stmt, {"exam": payload.exam, "subject_name": payload.subject_name})
+    await db.commit()
+    
+    await log_admin_action(db, admin.id, "DELETE", f"Deleted all questions for {payload.exam} - {payload.subject_name}")
+    return None
 
 
 @router.put("/questions/{question_id}", response_model=QuestionResponse, status_code=200)
@@ -292,6 +320,11 @@ class UserResponse(BaseModel):
     subscription_status: str
     trial_ends_at: Optional[datetime]
     created_at: datetime
+    deleted_at: Optional[datetime] = None
+
+class UserUpdateRequest(BaseModel):
+    role: Optional[str] = None
+    subscription_status: Optional[str] = None
 
 class UserStatsResponse(BaseModel):
     total_users: int
@@ -305,9 +338,9 @@ async def get_user_stats(
 ):
     from app.models.user import UserDb
     
-    total = await db.scalar(select(func.count(UserDb.id))) # type: ignore
-    subscribed = await db.scalar(select(func.count(UserDb.id)).where(cast(UserDb.subscription_status, String) == "premium")) # type: ignore
-    admins = await db.scalar(select(func.count(UserDb.id)).where(cast(UserDb.role, String) == "admin")) # type: ignore
+    total = await db.scalar(select(func.count(UserDb.id)).where(UserDb.deleted_at.is_(None))) # type: ignore
+    subscribed = await db.scalar(select(func.count(UserDb.id)).where(UserDb.deleted_at.is_(None), cast(UserDb.subscription_status, String) == "premium")) # type: ignore
+    admins = await db.scalar(select(func.count(UserDb.id)).where(UserDb.deleted_at.is_(None), cast(UserDb.role, String) == "admin")) # type: ignore
     
     return UserStatsResponse(
         total_users=total or 0,
@@ -324,7 +357,8 @@ async def list_users(
 ):
     from app.models.user import UserDb
     
-    result = await db.execute(select(UserDb).order_by(UserDb.created_at.desc()).limit(limit).offset(offset)) # type: ignore
+    # Exclude soft-deleted users
+    result = await db.execute(select(UserDb).where(UserDb.deleted_at.is_(None)).order_by(UserDb.created_at.desc()).limit(limit).offset(offset)) # type: ignore
     users = result.scalars().all()
     
     return [
@@ -335,9 +369,59 @@ async def list_users(
             subscription_status=u.subscription_status,
             trial_ends_at=u.trial_ends_at,
             created_at=u.created_at,
+            deleted_at=u.deleted_at,
         )
         for u in users
     ]
+
+@router.patch("/users/{user_id}", response_model=UserResponse)
+async def update_user(
+    user_id: UUID,
+    update_data: UserUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    from app.models.user import UserDb
+    user = await db.get(UserDb, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if update_data.role is not None:
+        user.role = update_data.role
+    if update_data.subscription_status is not None:
+        user.subscription_status = update_data.subscription_status
+        
+    await db.commit()
+    await db.refresh(user)
+    
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        role=user.role,
+        subscription_status=user.subscription_status,
+        trial_ends_at=user.trial_ends_at,
+        created_at=user.created_at,
+        deleted_at=user.deleted_at,
+    )
+
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    from app.models.user import UserDb
+    from datetime import datetime, timezone
+    
+    user = await db.get(UserDb, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    # Soft delete
+    user.deleted_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    await db.commit()
+    
+    return {"status": "success", "message": "User deleted"}
 
 @router.get("/test-query")
 async def test_query(db: AsyncSession = Depends(get_db)):

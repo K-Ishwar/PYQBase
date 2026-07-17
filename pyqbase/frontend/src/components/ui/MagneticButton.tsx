@@ -16,36 +16,12 @@ export function MagneticButton({
   magneticPull = 0.8,
   ...props 
 }: MagneticButtonProps) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [position, setPosition] = useState({ x: 0, y: 0 })
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!ref.current) return
-    const { clientX, clientY } = e
-    const { width, height, left, top } = ref.current.getBoundingClientRect()
-    
-    // Calculate center of the button
-    const x = (clientX - (left + width / 2)) * magneticPull
-    const y = (clientY - (top + height / 2)) * magneticPull
-    
-    setPosition({ x, y })
-  }
-
-  const handleMouseLeave = () => {
-    setPosition({ x: 0, y: 0 })
-  }
-
   return (
-    <motion.div
-      ref={ref}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      animate={{ x: position.x, y: position.y }}
-      transition={{ type: "spring", stiffness: 300, damping: 20, mass: 0.5 }}
+    <div
       className={cn("relative inline-block transition-shadow duration-300", className)}
       {...props}
     >
       {children}
-    </motion.div>
+    </div>
   )
 }

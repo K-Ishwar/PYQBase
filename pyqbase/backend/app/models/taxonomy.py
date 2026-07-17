@@ -17,7 +17,7 @@ class TopicDb(SQLModel, table=True):
     __tablename__ = "topics"
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    subject_id: UUID = Field(foreign_key="subjects.id")
+    subject_id: UUID = Field(foreign_key="subjects.id", index=True)
     name: str
 
 

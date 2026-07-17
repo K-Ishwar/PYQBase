@@ -68,9 +68,21 @@ if os.getenv("ENVIRONMENT") == "production" and _sentry_dsn:
     )
 
 
+from sqlalchemy import text
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    print("Executing DB schema changes...")
+    from app.core.database import engine
+    async with engine.begin() as conn:
+        await conn.execute(text("ALTER TABLE mock_tests ADD COLUMN IF NOT EXISTS time_limit INTEGER DEFAULT 30;"))
+        await conn.execute(text("ALTER TABLE mock_tests ADD COLUMN IF NOT EXISTS user_answers JSONB NOT NULL DEFAULT '{}'::jsonb;"))
+        await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_questions_topic_id ON questions (topic_id);"))
+        await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_topics_subject_id ON topics (subject_id);"))
+    print("DB schema changes executed.")
+
     # Start ELO background worker
+    elo_task = asyncio.create_task(_elo_worker_loop())
     
     # Start Heatmap scheduler and worker
     heatmap_sched_task = asyncio.create_task(heatmap_scheduler_loop())

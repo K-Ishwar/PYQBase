@@ -39,7 +39,7 @@ export default function DashboardPage() {
             <div className="p-3 bg-orange-500/10 text-orange-500 rounded-xl">
               <Zap className="w-6 h-6" />
             </div>
-            <span className="text-xs font-medium text-muted-foreground bg-secondary px-2 py-1 rounded-full">FR-15.1</span>
+            <span className="text-xs font-medium text-secondary-foreground bg-secondary px-2 py-1 rounded-full">FR-15.1</span>
           </div>
           <div>
             <h3 className="text-4xl font-black"><Odometer value={mockStreak} /> <span className="text-xl text-muted-foreground font-medium">Days</span></h3>

@@ -27,7 +27,7 @@ export function ExamCard({ icon, title, description, href = "#" }: ExamCardProps
           {description}
         </p>
         <div className="mt-6 flex items-center text-sm font-bold text-primary opacity-80 group-hover:opacity-100 transition-opacity w-full justify-between">
-          <span>View Dashboard</span>
+          <span>View Exam Details</span>
           <ArrowRight className="h-4 w-4 transform transition-transform group-hover:translate-x-1" />
         </div>
       </a>
