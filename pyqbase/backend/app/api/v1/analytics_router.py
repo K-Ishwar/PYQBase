@@ -30,9 +30,9 @@ class ExamStatsResponse(BaseModel):
 
 
 
-@router.get("/heatmaps/{subject_id}", response_model=SubjectHeatmapResponse)
+@router.get("/heatmaps/{subject_id_or_slug}", response_model=SubjectHeatmapResponse)
 async def get_subject_heatmap(
-    subject_id: UUID,
+    subject_id_or_slug: str,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -41,15 +41,24 @@ async def get_subject_heatmap(
     """
     
     # 1. First ensure the subject exists and get its name
-    subject_row = (await db.execute(
-        text("SELECT name FROM subjects WHERE id = :subject_id"),
-        {"subject_id": str(subject_id)}
-    )).scalar_one_or_none()
+    import uuid
+    try:
+        # Check if it's a UUID
+        val = uuid.UUID(subject_id_or_slug)
+        query = text("SELECT id, name FROM subjects WHERE id = :val")
+        val_str = str(val)
+    except ValueError:
+        # It's a slug
+        query = text("SELECT id, name FROM subjects WHERE replace(replace(lower(name), ' & ', '-'), ' ', '-') = :val")
+        val_str = subject_id_or_slug
+
+    subject_row = (await db.execute(query, {"val": val_str})).first()
     
     if not subject_row:
         raise HTTPException(status_code=404, detail="Subject not found")
         
-    subject_name = subject_row
+    actual_subject_id = subject_row.id
+    subject_name = subject_row.name
     
     # 2. Query the materialized view
     rows = (await db.execute(
@@ -59,7 +68,7 @@ async def get_subject_heatmap(
             WHERE subject_id = :subject_id
             ORDER BY weightage_percent DESC
         """),
-        {"subject_id": str(subject_id)}
+        {"subject_id": str(actual_subject_id)}
     )).mappings().all()
     
     topics = [
