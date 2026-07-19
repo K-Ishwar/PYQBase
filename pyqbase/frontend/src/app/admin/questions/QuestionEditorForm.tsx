@@ -7,12 +7,12 @@ import { z } from 'zod'
 import React, { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { apiClient } from '@/lib/api-client'
-import { useSubjects, useTopics } from '@/lib/hooks/useTaxonomy'
+import { useExams, useSubjects, useTopics } from '@/lib/hooks/useTaxonomy'
 
 // ─── Zod Schema — mirrors backend QuestionUpsertPayload ─────────────────────
 
 const questionSchema = z.object({
-  exam: z.enum(['UPSC CSE', 'UPSC CAPF', 'MPSC Rajyseva', 'UPSC CDS']),
+  exam: z.string().min(1, 'Exam is required'),
   year: z.coerce.number().min(1990).max(2030),
   paper: z.string().min(1, 'Paper is required'),
   question_number: z.coerce.number().min(1),
@@ -67,7 +67,7 @@ export function QuestionEditorForm({ questionId, defaultValues }: QuestionEditor
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(questionSchema) as any,
     defaultValues: {
-      exam: 'UPSC CSE',
+      exam: defaultValues?.exam || '',
       year: new Date().getFullYear(),
       paper: 'Prelims',
       correct_option: 'A',
@@ -86,6 +86,7 @@ export function QuestionEditorForm({ questionId, defaultValues }: QuestionEditor
     setValue('topic_id', '' as never)
   }, [selectedSubjectId, setValue])
 
+  const { data: availableExams = [], isLoading: isLoadingExams } = useExams()
   const { data: availableSubjects = [], isLoading: isLoadingSubjects } = useSubjects()
   const { data: availableTopics = [], isLoading: isLoadingTopics } = useTopics(selectedSubjectId || undefined)
 
@@ -180,11 +181,11 @@ export function QuestionEditorForm({ questionId, defaultValues }: QuestionEditor
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
             <label className={labelClass}>Exam *</label>
-            <select {...register('exam')} className={fieldClass}>
-              <option value="UPSC CSE">UPSC CSE</option>
-              <option value="UPSC CAPF">UPSC CAPF</option>
-              <option value="MPSC Rajyseva">MPSC Rajyseva</option>
-              <option value="UPSC CDS">UPSC CDS</option>
+            <select {...register('exam')} className={fieldClass} disabled={isLoadingExams}>
+              <option value="" disabled>Select Exam</option>
+              {availableExams.map(e => (
+                <option key={e.id} value={e.name}>{e.name}</option>
+              ))}
             </select>
             {errors.exam && <p className={errorClass}>{errors.exam.message}</p>}
           </div>

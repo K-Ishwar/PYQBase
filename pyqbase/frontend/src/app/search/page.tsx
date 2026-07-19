@@ -5,18 +5,13 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { Search } from 'lucide-react'
 import { useDebounce } from '@/lib/hooks/useDebounce'
 import { useSearch } from '@/lib/hooks/useSearch'
+import { usePublicExams } from '@/lib/hooks/useTaxonomy'
 import { useAuth } from '@/components/providers/auth-provider'
 import { SearchResultCard } from '@/components/ui/SearchResultCard'
 import { SearchResultSkeletonList } from '@/components/ui/SearchResultSkeleton'
 import { motion, AnimatePresence } from 'framer-motion'
 
-const EXAMS = [
-  { value: '', label: 'All Exams' },
-  { value: 'UPSC CSE', label: 'UPSC CSE' },
-  { value: 'UPSC CAPF', label: 'UPSC CAPF' },
-  { value: 'MPSC Rajyseva', label: 'MPSC Rajyseva' },
-  { value: 'UPSC CDS', label: 'UPSC CDS' },
-]
+// Dynamic exams will be fetched inside the component
 
 const SORTS = [
   { value: 'relevance', label: 'Most Relevant' },
@@ -49,6 +44,13 @@ function SearchContent() {
   const [sort, setSort] = useState('relevance')
   const [offset, setOffset] = useState(0)
   const LIMIT = 10
+  
+  const { data: publicExams = [] } = usePublicExams()
+  
+  const EXAMS = [
+    { value: '', label: 'All Exams' },
+    ...publicExams.map(e => ({ value: e.name, label: e.name }))
+  ]
 
   const debouncedQuery = useDebounce(inputValue, 300)
 
@@ -93,7 +95,7 @@ function SearchContent() {
           Search <span className="text-primary">Every PYQ</span>
         </h1>
         <p className="text-muted-foreground mb-6">
-          Cross-exam full-text search across UPSC CSE, UPSC CAPF, MPSC Rajyseva &amp; UPSC CDS.
+          Cross-exam full-text search across all supported exams.
         </p>
         <div className="relative max-w-2xl mx-auto">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />

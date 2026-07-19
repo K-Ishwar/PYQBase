@@ -5,50 +5,26 @@ import { SpotlightCard } from "@/components/ui/SpotlightCard"
 import { MagneticButton } from "@/components/ui/MagneticButton"
 import { ExamQuestionList } from "./ExamQuestionList"
 
-const EXAM_DATA = {
-  "upsc-cse": {
-    name: "UPSC Civil Services",
-    id: "UPSC CSE",
-    description: "The most prestigious civil service examination in India.",
-    stats: "15,200+ PYQs",
-    icon: <Landmark className="w-12 h-12 text-primary" />,
-    years: [2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013],
-    subjects: ["Polity", "History", "Geography", "Economy", "Mathematics", "Reasoning"]
-  },
-  "upsc-capf": {
-    name: "UPSC CAPF",
-    id: "UPSC CAPF",
-    description: "Central Armed Police Forces Assistant Commandant Examination.",
-    stats: "5,400+ PYQs",
-    icon: <ShieldCheck className="w-12 h-12 text-green-500" />,
-    years: [2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016],
-    subjects: ["General Ability", "Reasoning", "Mathematics", "English"]
-  },
-  "mpsc-rajyseva": {
-    name: "MPSC Rajyseva",
-    id: "MPSC Rajyseva",
-    description: "Maharashtra State Services Examination.",
-    stats: "8,100+ PYQs",
-    icon: <Briefcase className="w-12 h-12 text-orange-500" />,
-    years: [2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017],
-    subjects: ["History of Maharashtra", "Geography of Maharashtra", "Polity", "Economy"]
-  },
-  "upsc-cds": {
-    name: "UPSC CDS",
-    id: "UPSC CDS",
-    description: "Combined Defence Services Examination.",
-    stats: "6,800+ PYQs",
-    icon: <Compass className="w-12 h-12 text-red-500" />,
-    years: [2024, 2023, 2022, 2021, 2020, 2019, 2018],
-    subjects: ["English", "General Knowledge", "Mathematics"]
+async function getExamInfo(slug: string) {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8000'}/api/v1/taxonomy/exams`, { next: { revalidate: 60 } });
+    if (!res.ok) return null;
+    const exams = await res.json();
+    return exams.find((e: any) => e.slug === slug);
+  } catch (e) {
+    return null;
   }
 }
 
 export default async function ExamDashboardPage({ params }: { params: { examId: string } }) {
-  const exam = EXAM_DATA[params.examId as keyof typeof EXAM_DATA]
+  const dbExam = await getExamInfo(params.examId)
+  const fallbackName = params.examId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
 
-  if (!exam) {
-    notFound()
+  const exam = {
+    name: dbExam?.name || fallbackName,
+    id: dbExam?.name || fallbackName,
+    description: dbExam?.description || `Practice Previous Year Questions for ${dbExam?.name || fallbackName}.`,
+    icon: <BookOpen className="w-12 h-12 text-primary" />,
   }
 
   // Fetch live stats from backend

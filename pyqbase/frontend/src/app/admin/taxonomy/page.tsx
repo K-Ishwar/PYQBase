@@ -2,27 +2,49 @@
 
 import { useState } from 'react'
 import {
+  useExams,
+  useCreateExam,
+  useDeleteExam,
   useSubjects,
   useTopics,
   useCreateSubject,
   useDeleteSubject,
   useCreateTopic,
   useDeleteTopic,
+  useGenerateExamInfo
 } from '@/lib/hooks/useTaxonomy'
 
 export default function TaxonomyPage() {
+  const { data: exams = [], isLoading: isLoadingExams } = useExams()
   const { data: subjects = [], isLoading: isLoadingSubjects } = useSubjects()
   
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null)
   const { data: topics = [], isLoading: isLoadingTopics } = useTopics(selectedSubjectId ?? undefined)
 
+  const [newExam, setNewExam] = useState('')
   const [newSubject, setNewSubject] = useState('')
   const [newTopic, setNewTopic] = useState('')
 
+  const createExam = useCreateExam()
+  const deleteExam = useDeleteExam()
   const createSubject = useCreateSubject()
   const deleteSubject = useDeleteSubject()
   const createTopic = useCreateTopic()
   const deleteTopic = useDeleteTopic()
+  const generateExamInfo = useGenerateExamInfo()
+
+  function handleAddExam() {
+    if (!newExam.trim()) return
+    createExam.mutate(newExam.trim(), {
+      onSuccess: () => setNewExam('')
+    })
+  }
+
+  function handleDeleteExam(id: string) {
+    if (confirm('Are you sure you want to delete this exam?')) {
+      deleteExam.mutate(id)
+    }
+  }
 
   function handleAddSubject() {
     if (!newSubject.trim()) return
@@ -69,7 +91,55 @@ export default function TaxonomyPage() {
         <p className="mt-1 text-muted-foreground">Manage subjects and topics directly in the database.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Exams Column */}
+        <div className="rounded-xl border bg-card p-5 space-y-4">
+          <h2 className="font-bold text-base">Exams</h2>
+          <div className="flex gap-2">
+            <input
+              value={newExam}
+              onChange={(e) => setNewExam(e.target.value)}
+              placeholder="New exam name…"
+              className={inputClass}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddExam()}
+              disabled={createExam.isPending}
+            />
+            <button onClick={handleAddExam} disabled={createExam.isPending} className={btnClass}>Add</button>
+          </div>
+          {isLoadingExams ? (
+            <p className="text-xs text-muted-foreground animate-pulse">Loading exams...</p>
+          ) : (
+            <ul className="space-y-1">
+              {exams.map((e) => (
+                <li
+                  key={e.id}
+                  className={`flex items-center justify-between rounded-md px-3 py-2 text-sm cursor-pointer transition-colors hover:bg-muted`}
+                >
+                  <span>{e.name}</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={(ev) => { ev.stopPropagation(); generateExamInfo.mutate(e.id) }}
+                      className="rounded px-2 py-1 text-xs text-blue-500 hover:bg-blue-500/10 transition-colors disabled:opacity-50"
+                      disabled={generateExamInfo.isPending}
+                      title="Regenerate AI Info"
+                    >
+                      ✨ AI Info
+                    </button>
+                    <button
+                      onClick={(ev) => { ev.stopPropagation(); handleDeleteExam(e.id) }}
+                      className={deleteBtnClass}
+                      disabled={deleteExam.isPending}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </li>
+              ))}
+              {exams.length === 0 && <p className="text-xs text-muted-foreground px-3">No exams found.</p>}
+            </ul>
+          )}
+        </div>
+
         {/* Subjects Column */}
         <div className="rounded-xl border bg-card p-5 space-y-4">
           <h2 className="font-bold text-base">Subjects</h2>

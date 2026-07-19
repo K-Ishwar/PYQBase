@@ -12,6 +12,17 @@ export interface Topic extends TaxonomyItem {
 }
 
 
+export function useExams() {
+  return useQuery<TaxonomyItem[]>({
+    queryKey: ['exams'],
+    queryFn: async () => {
+      const res = await apiClient('/api/v1/admin/exams')
+      if (!res.ok) throw new Error('Failed to fetch exams')
+      return res.json()
+    },
+  })
+}
+
 export function useSubjects() {
   return useQuery<TaxonomyItem[]>({
     queryKey: ['subjects'],
@@ -38,6 +49,17 @@ export function useTopics(subjectId?: string) {
 
 
 // --- Public Endpoints ---
+export function usePublicExams() {
+  return useQuery({
+    queryKey: ['public', 'taxonomy', 'exams'],
+    queryFn: async () => {
+      const res = await apiClient('/api/v1/taxonomy/exams')
+      if (!res.ok) throw new Error('Failed to fetch public exams')
+      return res.json()
+    },
+  })
+}
+
 export function usePublicSubjects() {
   return useQuery({
     queryKey: ['public', 'taxonomy', 'subjects'],
@@ -63,6 +85,53 @@ export function usePublicTopics(subjectId: string) {
 
 
 // Mutations
+export function useCreateExam() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (name: string) => {
+      const res = await apiClient('/api/v1/admin/exams', {
+        method: 'POST',
+        body: JSON.stringify({ name }),
+      })
+      if (!res.ok) throw new Error('Failed to create exam')
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['exams'] })
+    },
+  })
+}
+
+export function useDeleteExam() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiClient(`/api/v1/admin/exams/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed to delete exam')
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['exams'] })
+    },
+  })
+}
+
+export function useGenerateExamInfo() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiClient(`/api/v1/admin/exams/${id}/generate-info`, {
+        method: 'POST',
+      })
+      if (!res.ok) throw new Error('Failed to generate exam info')
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['exams'] })
+      queryClient.invalidateQueries({ queryKey: ['public', 'taxonomy', 'exams'] })
+    },
+  })
+}
+
 export function useCreateSubject() {
   const queryClient = useQueryClient()
   return useMutation({

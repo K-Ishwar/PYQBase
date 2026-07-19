@@ -3,12 +3,43 @@ from sqlalchemy import select, delete, func
 from typing import Optional
 from uuid import UUID
 
-from app.models.taxonomy import SubjectDb, TopicDb
+from app.models.taxonomy import SubjectDb, TopicDb, ExamDb
+
+
+from app.models.question import QuestionDb
+
+# ─── Exams ─────────────────────────────────────────────────────────────────────
+
+async def list_exams(db: AsyncSession) -> list[ExamDb]:
+    result = await db.execute(select(ExamDb).order_by(ExamDb.name))
+    return result.scalars().all()
+
+async def create_exam(db: AsyncSession, name: str) -> ExamDb:
+    slug = name.lower().replace(" ", "-")
+    exam = ExamDb(name=name, slug=slug)
+    db.add(exam)
+    await db.commit()
+    await db.refresh(exam)
+    return exam
+
+async def get_or_create_exam(db: AsyncSession, name: str) -> ExamDb:
+    result = await db.execute(select(ExamDb).where(func.lower(ExamDb.name) == name.lower()))
+    exam = result.scalar_one_or_none()
+    if exam:
+        return exam
+    return await create_exam(db, name)
+
+async def delete_exam(db: AsyncSession, exam_id: UUID) -> bool:
+    result = await db.execute(select(ExamDb).where(ExamDb.id == exam_id))
+    exam = result.scalar_one_or_none()
+    if not exam:
+        return False
+    await db.delete(exam)
+    await db.commit()
+    return True
 
 
 # ─── Subjects ──────────────────────────────────────────────────────────────────
-
-from app.models.question import QuestionDb
 
 async def list_subjects(db: AsyncSession) -> list[dict]:
     stmt = select(

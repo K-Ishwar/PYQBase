@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, text
 from uuid import UUID, uuid4
@@ -8,6 +8,7 @@ from app.core.database import get_db
 from app.core.security import get_admin_user, User
 from app.models.question import QuestionDb, QuestionUpsertPayload, QuestionResponse
 from app.models.taxonomy import (
+    ExamDb, ExamCreate, ExamResponse,
     SubjectDb,
     SubjectCreate, SubjectResponse,
     TopicDb,
@@ -209,6 +210,109 @@ async def bulk_delete_questions(
             action="DELETE"
         )
     return
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# TAXONOMY — EXAMS
+# ──────────────────────────────────────────────────────────────────────────────
+
+@router.get("/exams", response_model=list[ExamResponse])
+async def list_exams(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    return await taxonomy_repo.list_exams(db)
+
+
+@router.post("/exams", response_model=ExamResponse, status_code=201)
+async def create_exam(
+    payload: ExamCreate,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    from sqlalchemy import select, func
+    # check if exists
+    result = await db.execute(select(ExamDb).where(func.lower(ExamDb.name) == payload.name.lower()))
+    exam = result.scalar_one_or_none()
+    
+    is_new = False
+    if not exam:
+        exam = await taxonomy_repo.create_exam(db, payload.name)
+        is_new = True
+
+    await log_admin_action(db, admin.id, "exams", exam.id, "CREATE_OR_GET",
+                           new_payload={"name": exam.name})
+
+    if is_new:
+        background_tasks.add_task(generate_and_save_exam_info, exam.id)
+
+    return exam
+
+
+async def generate_and_save_exam_info(exam_id: UUID):
+    from app.services.ai_content_service import generate_exam_info
+    from app.core.database import async_session_maker
+    from sqlalchemy import select
+    
+    async with async_session_maker() as db:
+        result = await db.execute(select(ExamDb).where(ExamDb.id == exam_id))
+        exam = result.scalar_one_or_none()
+        if not exam:
+            return
+            
+        try:
+            info = await generate_exam_info(exam.name)
+            exam.description = info.get("description")
+            exam.overview = info.get("overview")
+            exam.pattern = info.get("pattern")
+            exam.eligibility = info.get("eligibility")
+            await db.commit()
+        except Exception as e:
+            # Handle silently in background task
+            pass
+
+@router.post("/exams/{exam_id}/generate-info", response_model=ExamResponse)
+async def admin_generate_exam_info(
+    exam_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    from app.services.ai_content_service import generate_exam_info
+    from sqlalchemy import select
+    
+    result = await db.execute(select(ExamDb).where(ExamDb.id == exam_id))
+    exam = result.scalar_one_or_none()
+    if not exam:
+        raise HTTPException(status_code=404, detail="Exam not found")
+        
+    try:
+        info = await generate_exam_info(exam.name)
+        exam.description = info.get("description")
+        exam.overview = info.get("overview")
+        exam.pattern = info.get("pattern")
+        exam.eligibility = info.get("eligibility")
+        await db.commit()
+        await db.refresh(exam)
+        
+        await log_admin_action(db, admin.id, "exams", exam.id, "UPDATE_AI_INFO",
+                               new_payload={"info": "AI generated details"})
+        return exam
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@router.delete("/exams/{exam_id}", status_code=204)
+async def delete_exam(
+    exam_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    deleted = await taxonomy_repo.delete_exam(db, exam_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Exam not found")
+    await log_admin_action(db, admin.id, "exams", exam_id, "DELETE")
 
 
 # ──────────────────────────────────────────────────────────────────────────────

@@ -3,10 +3,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 
 from app.core.database import get_db
-from app.models.taxonomy import SubjectResponse, TopicResponse
+from app.models.taxonomy import SubjectResponse, TopicResponse, ExamResponse
 from app.repositories import taxonomy_repo
 
 router = APIRouter()
+
+@router.get("/exams", response_model=list[ExamResponse])
+async def list_exams(db: AsyncSession = Depends(get_db)):
+    """Publicly accessible endpoint to list all exams."""
+    return await taxonomy_repo.list_exams(db)
+
 
 @router.get("/subjects", response_model=list[SubjectResponse])
 async def list_subjects(db: AsyncSession = Depends(get_db)):

@@ -28,7 +28,7 @@ async function adminFetch<T>(
 // ─── Question Types ────────────────────────────────────────────────────────
 
 export interface QuestionUpsertPayload {
-  exam: 'UPSC CSE' | 'UPSC CAPF' | 'MPSC Rajyseva' | 'UPSC CDS'
+  exam: string
   year: number
   paper: string
   question_number: number
@@ -99,6 +99,25 @@ export const adminApi = {
   deleteTopic: (topicId: string, token: string) =>
     adminFetch<void>(`/api/v1/admin/topics/${topicId}`, { method: 'DELETE' }, token),
 
+  // Exams
+  listExams: (token: string) =>
+    adminFetch<{ id: string; name: string; slug: string; description?: string; overview?: any; pattern?: any; eligibility?: any }[]>('/api/v1/admin/exams', {}, token),
+
+  createExam: (name: string, token: string) =>
+    adminFetch<{ id: string; name: string; slug: string; description?: string; overview?: any; pattern?: any; eligibility?: any }>('/api/v1/admin/exams', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    }, token),
+
+  deleteExam: (id: string, token: string) =>
+    adminFetch<void>(`/api/v1/admin/exams/${id}`, { method: 'DELETE' }, token),
+
+  generateExamInfo: (id: string, token: string) =>
+    adminFetch<{ id: string; name: string; slug: string; description?: string; overview?: any; pattern?: any; eligibility?: any }>(
+      `/api/v1/admin/exams/${id}/generate-info`,
+      { method: 'POST' },
+      token
+    ),
 
   deleteQuestions: (questionIds: string[], token: string) =>
     adminFetch<void>(`/api/v1/admin/questions/bulk`, { 

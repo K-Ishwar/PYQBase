@@ -11,7 +11,9 @@ import { Target as TargetIcon, Clock as ClockIcon } from "lucide-react"
 
 export default function Home() {
   const [liveSubjects, setLiveSubjects] = useState<{ id: string, name: string }[]>([])
+  const [liveExams, setLiveExams] = useState<{ id: string, name: string }[]>([])
   const [loadingSubjects, setLoadingSubjects] = useState(true)
+  const [loadingExams, setLoadingExams] = useState(true)
 
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
@@ -24,6 +26,17 @@ export default function Home() {
       .catch(e => {
         console.error("Failed to fetch subjects", e)
         setLoadingSubjects(false)
+      })
+
+    fetch(`${apiUrl}/api/v1/taxonomy/exams`)
+      .then(res => res.json())
+      .then(data => {
+        setLiveExams(data)
+        setLoadingExams(false)
+      })
+      .catch(e => {
+        console.error("Failed to fetch exams", e)
+        setLoadingExams(false)
       })
   }, [])
 
@@ -75,38 +88,22 @@ export default function Home() {
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="h-full">
-            <ExamCard 
-              title="UPSC CSE" 
-              description="Union Public Service Commission" 
-              icon={<Landmark className="h-8 w-8 text-primary" />}
-              href="/exams/upsc-cse" 
-            />
-          </div>
-          <div className="h-full">
-            <ExamCard 
-              title="UPSC CAPF" 
-              description="Central Armed Police Forces" 
-              icon={<ShieldCheck className="h-8 w-8 text-green-600" />} 
-              href="/exams/upsc-capf"
-            />
-          </div>
-          <div className="h-full">
-            <ExamCard 
-              title="MPSC Rajyseva" 
-              description="Maharashtra State Services" 
-              icon={<Briefcase className="h-8 w-8 text-orange-600" />} 
-              href="/exams/mpsc-rajyseva"
-            />
-          </div>
-          <div className="h-full">
-            <ExamCard 
-              title="UPSC CDS" 
-              description="Combined Defence Services" 
-              icon={<Compass className="h-8 w-8 text-red-600" />} 
-              href="/exams/upsc-cds"
-            />
-          </div>
+          {loadingExams ? (
+            <div className="col-span-full text-center text-sm text-muted-foreground animate-pulse">Loading exams...</div>
+          ) : liveExams.length > 0 ? (
+            liveExams.map(exam => (
+              <div className="h-full" key={exam.id}>
+                <ExamCard 
+                  title={exam.name} 
+                  description="Explore Previous Year Questions" 
+                  icon={<Landmark className="h-8 w-8 text-primary" />}
+                  href={`/exams/${exam.name.toLowerCase().replace(/ /g, '-')}`} 
+                />
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full text-center text-sm text-muted-foreground">No exams found.</div>
+          )}
         </div>
       </section>
 

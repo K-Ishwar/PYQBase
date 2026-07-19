@@ -10,6 +10,7 @@ export default function IngestionUploadPage() {
   const [paper, setPaper] = useState("GS Paper 1")
   const [subjectId, setSubjectId] = useState("")
   const [subjects, setSubjects] = useState<any[]>([])
+  const [exams, setExams] = useState<any[]>([])
   const [paperFile, setPaperFile] = useState<File | null>(null)
   const [ingestionMode, setIngestionMode] = useState<"file" | "text">("file")
   const [paperText, setPaperText] = useState("")
@@ -25,6 +26,15 @@ export default function IngestionUploadPage() {
       .then(res => res.json())
       .then(data => setSubjects(data))
       .catch(err => console.error("Failed to load subjects", err))
+
+    // Fetch exams
+    apiClient("/api/v1/taxonomy/exams")
+      .then(res => res.json())
+      .then(data => {
+        setExams(data)
+        if (data.length > 0) setExam(data[0].name)
+      })
+      .catch(err => console.error("Failed to load exams", err))
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -255,10 +265,9 @@ export default function IngestionUploadPage() {
           <div className="space-y-2">
             <label className="text-sm font-medium">Exam</label>
             <select value={exam} onChange={(e) => setExam(e.target.value)} className="w-full p-2 border rounded-md" required>
-              <option value="UPSC CSE">UPSC CSE</option>
-              <option value="UPSC CAPF">UPSC CAPF</option>
-              <option value="MPSC Rajyseva">MPSC Rajyseva</option>
-              <option value="UPSC CDS">UPSC CDS</option>
+              {exams.map(e => (
+                <option key={e.id} value={e.name}>{e.name}</option>
+              ))}
             </select>
           </div>
           <div className="space-y-2">

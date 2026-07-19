@@ -1,0 +1,5 @@
+-- Add AI fields to exams table
+ALTER TABLE exams ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE exams ADD COLUMN IF NOT EXISTS overview JSONB;
+ALTER TABLE exams ADD COLUMN IF NOT EXISTS pattern JSONB;
+ALTER TABLE exams ADD COLUMN IF NOT EXISTS eligibility JSONB;

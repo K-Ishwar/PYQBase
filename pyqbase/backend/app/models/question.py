@@ -45,7 +45,7 @@ class QuestionOptions(BaseModel):
     D: str
 
 class QuestionUpsertPayload(BaseModel):
-    exam: Literal["UPSC CSE", "UPSC CAPF", "MPSC Rajyseva", "UPSC CDS"]
+    exam: str
     year: int
     paper: str
     question_number: int
